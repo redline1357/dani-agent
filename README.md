@@ -4,7 +4,7 @@ Dani Agent builds small websites and Python applications on a single Windows PC.
 
 **Clean source bundle for local evaluation; not yet qualified for customer delivery.** The current source passed 456 offline tests and an independent source review. A real Word-upload build passed six combined independent acceptance cases. Fresh-account onboarding, wider Windows qualification, and owner licensing/provider-agreement decisions remain separate gates. These local results do not guarantee every future build will succeed.
 
-Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
+Quick start: [QUICK_START.md](QUICK_START.md). For normal use, double-click **Start-Dani-Dashboard.cmd**. Initial setup checks can consume subscription quota; see **Start and connect** below. Offline mode is an optional way to inspect the application without AI sessions. This is a Python source application, not a standalone executable or an installer.
 
 ## Requirements
 
@@ -21,13 +21,13 @@ The current Dani Agent workflow accepts subscription sign-ins and rejects API-ke
 
 Keep this folder in a location you control. Do not run Dani Agent as administrator.
 
-For initial inspection without AI sessions, double-click **Start-Dani-Offline.cmd**, or open a terminal in this folder and run:
+Double-click **Start-Dani-Dashboard.cmd** to connect your accounts and build products. Normal mode can automatically run one Claude zero-tool startup check and one Codex sandbox diagnostic when their prerequisites are met. These setup checks consume subscription quota before any product-build approval. There is no separate initial setup-consent toggle, so start normal mode only when you agree to those checks. For inspection without AI usage, use the optional offline mode described below.
+
+Alternatively, open a terminal in this folder and run:
 
 ```text
-py -3.12 -I -B DaniDashboard.py --offline-only
+py -3.12 -I -B DaniDashboard.py
 ```
-
-This mode permits model-free checks and product drafts while disabling AI sessions and approvals. Before using the normal **Start-Dani-Dashboard.cmd** launcher, explicitly decide whether to authorize its automatic setup sessions: one Claude zero-tool startup check and one Codex sandbox diagnostic when their prerequisites are met. These checks use subscription sessions. The current dashboard starts them automatically in live mode; it does not offer a separate initial setup-consent toggle. Remain in model-free mode if that scope has not been approved.
 
 The dashboard opens on `http://127.0.0.1:8765` through a private launcher link. Keep that link private.
 
@@ -38,6 +38,16 @@ The dashboard opens on `http://127.0.0.1:8765` through a private launcher link. 
 5. Review the models the installation makes available. Product steps choose model and effort automatically; the available choices depend on the confirmed programs and account access.
 
 Managed settings or provider environment overrides can block readiness. Review those with the owner or administrator; do not remove organizational controls merely to pass setup.
+
+### Optional: inspect without AI usage
+
+Double-click **Start-Dani-Offline.cmd**, or run:
+
+```text
+py -3.12 -I -B DaniDashboard.py --offline-only
+```
+
+This optional mode permits model-free checks and product drafts while disabling AI sessions and AI-work approvals. It cannot build products with AI and is not a required setup step. Use **Start-Dani-Dashboard.cmd** for normal operation.
 
 ## Build and monitor
 

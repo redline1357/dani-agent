@@ -15,6 +15,7 @@ import os
 import re
 from pathlib import Path
 import secrets
+import socket
 import threading
 import time
 import traceback
@@ -44,6 +45,16 @@ def seconds_since(stamp):
         return (datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(stamp)).total_seconds()
     except (TypeError, ValueError):
         return float('inf')
+
+
+class Server(ThreadingHTTPServer):
+    """Owns its port exclusively. Python's HTTP servers set SO_REUSEADDR, which on Windows lets a second
+    program bind the same 127.0.0.1 port and receive requests, including the one-time token link."""
+    allow_reuse_address = False
+
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def same(given, expected):
@@ -806,9 +817,9 @@ def serve(port=8765, open_browser=True, *, offline_only=False):
             pass   # a product that could not move is left as it was
         dashboard = Dashboard(store, engine, secrets.token_urlsafe(24))
         try:
-            server = ThreadingHTTPServer(('127.0.0.1', port), handler_class(dashboard, port))
+            server = Server(('127.0.0.1', port), handler_class(dashboard, port))
         except OSError:
-            server = ThreadingHTTPServer(('127.0.0.1', 0), None)
+            server = Server(('127.0.0.1', 0), None)
             port = server.server_address[1]
             server.RequestHandlerClass = handler_class(dashboard, port)
         stop = threading.Event()

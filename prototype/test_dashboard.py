@@ -914,5 +914,22 @@ class PageScriptTests(unittest.TestCase):
         self.assertIn('ATTACHMENTS_OK', out.stdout)
 
 
+class ExclusivePortTests(unittest.TestCase):
+    def test_no_other_program_can_share_the_dashboard_port(self):
+        squatter = socket.socket()
+        squatter.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        squatter.bind(('127.0.0.1', 0))
+        squatter.listen()
+        self.addCleanup(squatter.close)
+        with self.assertRaises(OSError):   # serve() then falls back to a free port
+            D.Server(('127.0.0.1', squatter.getsockname()[1]), None)
+        server = D.Server(('127.0.0.1', 0), None)
+        self.addCleanup(server.server_close)
+        late = socket.socket()
+        late.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.addCleanup(late.close)
+        with self.assertRaises(OSError):
+            late.bind(('127.0.0.1', server.server_address[1]))
+
 if __name__ == '__main__':
     unittest.main()

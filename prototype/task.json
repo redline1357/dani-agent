@@ -1,0 +1,4 @@
+{
+  "task_id": "clamp-v1",
+  "objective": "Implement integer clamp(value, lower, upper) in toy_math.py. Return lower below the range, upper above it, and value within it. Raise ValueError when lower > upper. Change only toy_math.py."
+}

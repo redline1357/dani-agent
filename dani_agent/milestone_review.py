@@ -65,8 +65,10 @@ def passed(run, plan):
 
 
 def reviews():
-    """(run, plan) of every prepared review, newest first (run folders start with a UTC timestamp)."""
-    for path in sorted(RUNS.glob('*/artifacts/milestone_plan.json'), reverse=True):
+    """(run, plan) of every prepared review, newest first (run folders start with a UTC timestamp). Reviews made
+    by earlier versions are under prototype/runs; new ones are in the work folder (prepare_live_run.py)."""
+    paths = [*RUNS.glob('*/artifacts/milestone_plan.json'), *APP['WORK_RUNS'].glob('*/artifacts/milestone_plan.json')]
+    for path in sorted(paths, key=lambda p: p.parent.parent.name, reverse=True):
         try:
             yield path.parent.parent, json.loads(path.read_text())
         except (OSError, ValueError):

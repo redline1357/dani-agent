@@ -21,7 +21,7 @@ def execute(*, profile=False):
         # A single approved attempt globally for this final diagnostic, no retries.
         attempt = BASE / "final_reviewer_startup_attempt.json"
         APP["save"](attempt, {"started": True, "deadline_seconds": 15, "max_turns": 1})
-    run = APP["prepare"](BASE / "task.json")
+    run = APP["prepare"](BASE / "task.json", parent=APP["WORK_RUNS"])   # outside the source tree (prepare_live_run.py)
     APP["preflight"](run)
     if profile:
         APP["save"](run / "artifacts/verified_startup_environment.json", APP["OLD_GATE"]["child_env"]())

@@ -191,5 +191,52 @@ class DeliveryGuardTests(unittest.TestCase):
                 lock.return_value.close.assert_called_once()
 
 
+class LiveRunLocationTests(unittest.TestCase):
+    """2026-10-29: the clean repository has AGENTS.md at its root, and the preflight refuses any AGENTS.md
+    above a run. Live runs made under prototype/runs were all blocked (ANCESTOR_INSTRUCTIONS_REQUIRE_REVIEW),
+    so no source review passed and every new product stopped before its plan."""
+
+    @staticmethod
+    def instructions_above(run):
+        # The same walk as orchestrator.preflight(): run/repo and every parent folder.
+        return [parent for parent in (run / 'repo', *(run / 'repo').parents)
+                if any((parent / name).exists() for name in ['AGENTS.md', 'AGENTS.override.md']
+                       + ([] if parent == Path.home() else ['.codex/config.toml']))]
+
+    def test_a_live_run_is_made_in_the_work_folder_where_the_preflight_finds_no_instructions(self):
+        import runpy
+        import fixture_runs as TF
+        prepare = runpy.run_path(str(C.PROTO / 'prepare_live_run.py'))['prepare']
+        run = prepare(TF.reviewer_source())
+        self.addCleanup(K.remove_tree, run)
+        self.assertEqual(run.parent.resolve(), C.APP['WORK_RUNS'].resolve())
+        self.assertFalse(run.resolve().is_relative_to(ROOT.resolve()))
+        self.assertEqual(self.instructions_above(run), [])
+        self.assertEqual(C.APP['verified_startup_gate'](run)['verdict'], 'PASS')
+
+    def test_reviews_from_both_folders_are_found_newest_first(self):
+        from dani_agent import milestone_review as R
+        with tempfile.TemporaryDirectory(prefix='review_runs_', dir=ROOT / 'prototype') as temporary:
+            old, work = Path(temporary) / 'old', Path(temporary) / 'work'
+            for root, name in ((old, '20261020T000000Z_aaaaaaaa'), (work, '20261029T000000Z_bbbbbbbb'),
+                               (old, '20261025T000000Z_cccccccc')):
+                (root / name / 'artifacts').mkdir(parents=True)
+                (root / name / 'artifacts/milestone_plan.json').write_text(json.dumps({'name': name}))
+            with patch.object(R, 'RUNS', old), patch.dict(R.APP, {'WORK_RUNS': work}):
+                self.assertEqual([plan['name'] for _, plan in R.reviews()],
+                                 ['20261029T000000Z_bbbbbbbb', '20261025T000000Z_cccccccc', '20261020T000000Z_aaaaaaaa'])
+
+    def test_the_reviewer_profile_is_found_in_the_work_folder_or_where_an_earlier_version_made_it(self):
+        with tempfile.TemporaryDirectory(prefix='profile_runs_', dir=ROOT / 'prototype') as temporary:
+            base = Path(temporary)
+            data, old, work = base / 'data', base / 'old', base / 'work'
+            for folder in (data, old / '20261018T000000Z_aaaaaaaa', work / '20261029T000000Z_bbbbbbbb'):
+                folder.mkdir(parents=True)
+            with patch.object(C, 'DATA', data), patch.object(C, 'RUNS', old), patch.dict(C.APP, {'WORK_RUNS': work}):
+                for name, expected in (('20261029T000000Z_bbbbbbbb', work), ('20261018T000000Z_aaaaaaaa', old)):
+                    (data / 'reviewer_profile.json').write_text(json.dumps({'run': name}))
+                    self.assertEqual(C.reviewer_source(), expected / name)
+
+
 if __name__ == '__main__':
     unittest.main()

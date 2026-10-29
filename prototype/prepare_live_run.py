@@ -14,7 +14,9 @@ def prepare(source, *, template="clamp-v1", parent=None):
     gate = app["verified_startup_gate"](source)
     if app["inventory"](source / "repo") != json.loads((source / "control/baseline.json").read_text())["inventory"]:
         raise RuntimeError("SOURCE_TOY_REPOSITORY_CHANGED_STOP")
-    run = app["prepare"](BASE / "task.json", template=template, parent=parent)
+    # Live runs go to the private work folder, never under this source tree: the preflight refuses any
+    # AGENTS.md above a run, and the repository root has one (2026-10-29: every source review was blocked).
+    run = app["prepare"](BASE / "task.json", template=template, parent=app["WORK_RUNS"] if parent is None else parent)
     def relocate(value):
         if isinstance(value, str):
             return value.replace(str(source), str(run))

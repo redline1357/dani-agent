@@ -33,7 +33,8 @@ def reviewer_source():
     except (OSError, ValueError, KeyError, TypeError):
         name = None
     if type(name) is str and name and name.isprintable() and Path(name).name == name and not name.startswith("synthetic"):
-        return RUNS / name
+        # New profiles are made in the work folder; one made by an earlier version stays where it is.
+        return APP["WORK_RUNS"] / name if (APP["WORK_RUNS"] / name).is_dir() else RUNS / name
     if LEGACY_SOURCE.is_dir():
         return LEGACY_SOURCE
     raise RuntimeError("CONNECT_CLAUDE_REVIEWER_CHECK_REQUIRED")

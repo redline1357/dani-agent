@@ -730,13 +730,15 @@ class Coordinator:
     def progress(self):
         if self.last_error:
             return {"phase": self.last_error}
-        if not self.current:
+        current = self.current   # read once: the worker thread clears it when the task ends
+        if not current:
             host_ready = self.host_context.get("appcontainer") is False and self.host_context.get("elevated") is False
             return {"phase": "idle" if host_ready else "normal_non_elevated_host_required", "host_context": self.host_context}
-        folder = DATA / "jobs" / self.current["id"]
+        folder = DATA / "jobs" / current["id"]
         status_path = folder / "status.json"
         try:
             status = read_json(status_path) if status_path.exists() else {"phase": "starting"}
+            status["task_kind"] = current["kind"]   # the page names a self-test or setup check instead of "starting"
             paths = list(folder.glob("*.progress.jsonl"))
             if status.get("run"):
                 run = APP["approved_run"](status["run"])

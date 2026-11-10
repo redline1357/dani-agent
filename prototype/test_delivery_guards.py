@@ -191,6 +191,44 @@ class DeliveryGuardTests(unittest.TestCase):
                 lock.return_value.close.assert_called_once()
 
 
+class ReadinessAndProgressTests(unittest.TestCase):
+    """2026-11-10: the page asked the user to "finish connecting" while only Dani Agent's own self-test was open,
+    and called a running self-test "starting"."""
+
+    def test_status_names_what_is_still_open_in_the_page_order(self):
+        store = Mock()
+        store.tasks.return_value = []
+        tools = {name: {'path': sys.executable, 'version': '1'} for name in K.TOOLS}
+        signed_in = {'codex': {'ok': True}, 'claude': {'ok': True}}
+        def status(login, folder, self_test, host=True):
+            with patch.dict(K.APP, {'TOOLS': tools}), patch.object(K, 'self_test_current', return_value=self_test), \
+                    patch.object(K, 'reviewer_profile_state', return_value='current'), patch.object(K, 'models', return_value={}), \
+                    patch.object(C, 'integration_ready', return_value=host), \
+                    patch('dani_agent.model_settings.auto_settings', return_value={'codex_model': 'a', 'claude_model': 'b'}):
+                value = K.status(store, login, folder)
+                return value['ready'], value['missing']
+        self.assertEqual(status(signed_in, {'ready': True}, True), (True, []))
+        self.assertEqual(status(signed_in, {'ready': True}, False), (False, ['self_test']))        # nothing for the user to do
+        self.assertEqual(status(signed_in, {'ready': True}, False, host=False), (False, ['self_test', 'codex_sandbox']))
+        self.assertEqual(status({'codex': {'ok': True}, 'claude': {'ok': False}}, {'ready': False}, False),
+                         (False, ['sign_in', 'folder', 'self_test']))
+        self.assertEqual(status({**signed_in, 'environment_overrides': ['ANTHROPIC_BASE_URL']}, {'ready': True}, True),
+                         (False, ['sign_in']))
+
+    def test_progress_names_the_running_task_and_survives_the_task_ending(self):
+        with tempfile.TemporaryDirectory(prefix='progress_', dir=ROOT / 'prototype') as temporary, \
+                patch.object(C, 'DATA', Path(temporary)):
+            engine = C.Coordinator.__new__(C.Coordinator)
+            engine.last_error, engine.host_context = None, {'appcontainer': False, 'elevated': False}
+            engine.current = {'id': 'synthetic', 'kind': 'offline_tests'}
+            self.assertEqual(engine.progress(), {'phase': 'starting', 'task_kind': 'offline_tests'})
+            (Path(temporary) / 'jobs/synthetic').mkdir(parents=True)
+            (Path(temporary) / 'jobs/synthetic/status.json').write_text(json.dumps({'phase': 'product_step', 'step': 1}))
+            self.assertEqual(engine.progress(), {'phase': 'product_step', 'step': 1, 'task_kind': 'offline_tests'})
+            engine.current = None   # the worker thread clears it when the task ends
+            self.assertEqual(engine.progress()['phase'], 'idle')
+
+
 class LiveRunLocationTests(unittest.TestCase):
     """2026-10-29: the clean repository has AGENTS.md at its root, and the preflight refuses any AGENTS.md
     above a run. Live runs made under prototype/runs were all blocked (ANCESTOR_INSTRUCTIONS_REQUIRE_REVIEW),
@@ -222,7 +260,7 @@ class LiveRunLocationTests(unittest.TestCase):
                                (old, '20261025T000000Z_cccccccc')):
                 (root / name / 'artifacts').mkdir(parents=True)
                 (root / name / 'artifacts/milestone_plan.json').write_text(json.dumps({'name': name}))
-            with patch.object(R, 'RUNS', old), patch.dict(R.APP, {'WORK_RUNS': work}):
+            with patch.object(R, 'RUNS', old), patch.dict(R.APP, {'WORK_RUNS': work}), patch.object(R.C, 'DATA', Path(temporary)):
                 self.assertEqual([plan['name'] for _, plan in R.reviews()],
                                  ['20261029T000000Z_bbbbbbbb', '20261025T000000Z_cccccccc', '20261020T000000Z_aaaaaaaa'])
 

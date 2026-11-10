@@ -303,6 +303,7 @@ class Dashboard:
                 'review_current': self.review_current(), 'review_task_state': review_task['state'] if review_task else None,
                 'integration_ready': integration_ready(self.store), 'max_steps': PR.MAX_STEPS,
                 'connect_ready': (self.connect_cache or {}).get('ready'),
+                'connect_missing': (self.connect_cache or {}).get('missing'), 'connect_checks': (self.connect_cache or {}).get('checks'),
                 'kinds': {key: value['label'] for key, value in PR.KINDS.items()}}
 
     # ---- actions ----------------------------------------------------------------------------
@@ -857,34 +858,66 @@ PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="dani-token" content="__TOKEN__"><title>Dani Agent</title>
 <style>
-:root{--bg:#f6f7f9;--panel:#fff;--text:#1d2330;--muted:#5d6676;--line:#e2e5ea;--accent:#3b5bdb;--ok:#2b8a3e;--warn:#b7791f;--bad:#c92a2a;--chip:#eef1f6}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--panel:#1c2027;--text:#e6e9ef;--muted:#9aa3b2;--line:#2c323c;--accent:#7c96ff;--ok:#5cc46b;--warn:#e0a23c;--bad:#ff6b6b;--chip:#262b34}}
-*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--text)}
-header{display:flex;align-items:center;gap:1rem;padding:.9rem 1.5rem;border-bottom:1px solid var(--line);background:var(--panel)}
-header h1{font-size:1.15rem;margin:0}header .status{margin-left:auto;color:var(--muted);font-size:.9rem}
-.layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 56px)}
-aside{border-right:1px solid var(--line);padding:1rem;background:var(--panel)}main{padding:1.5rem;max-width:1000px;min-width:0;overflow-wrap:anywhere}
-button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:.45rem .9rem;border-radius:8px;cursor:pointer}
-button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button:disabled{opacity:.5;cursor:default}
-.item{display:block;width:100%;text-align:start;border:0;background:none;color:inherit;font:inherit;padding:.6rem .7rem;border-radius:8px;cursor:pointer;margin:.2rem 0}.item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.item:hover,.item.sel{background:var(--chip)}
-.item small{display:block;color:var(--muted)}input,textarea,select{font:inherit;width:100%;padding:.55rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text)}
-label{display:block;margin:.8rem 0 .3rem;font-weight:600}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.1rem 1.2rem;margin-bottom:1rem}
-.chip{display:inline-block;padding:.1rem .55rem;border-radius:999px;background:var(--chip);font-size:.8rem;color:var(--muted)}
-.chip.ok{color:var(--ok)}.chip.warn{color:var(--warn)}.chip.bad{color:var(--bad)}
-.steps li{margin:.5rem 0}.muted{color:var(--muted)}.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
-.banner{padding:.8rem 1rem;border-radius:10px;border:1px solid var(--warn);margin-bottom:1rem}.err{color:var(--bad);min-height:1.2em}
-.running{display:flex;align-items:center;gap:.7rem;padding:.85rem 1.1rem;border-radius:10px;margin-bottom:1rem;
-  background:#fff3bf;color:#5c3c00;border:2px solid #f59f00;font-weight:700;font-size:1.05rem}
-@media (prefers-color-scheme:dark){.running{background:#3d2e00;color:#ffe08a;border-color:#f59f00}}
-.running .dot{width:.75rem;height:.75rem;border-radius:50%;background:#f59f00;flex:none;animation:pulse 1.2s ease-in-out infinite}
-.running .sub{font-weight:500;opacity:.85}
+:root{--bg:#f5f6f8;--panel:#fff;--text:#1b2130;--muted:#566072;--line:#dfe3ea;--field:#8a93a4;--accent:#3b5bdb;--accent-ink:#fff;--accent-soft:#eef1fd;
+  --ok:#1b6e2f;--ok-bg:#e2f4e5;--warn:#8a5200;--warn-bg:#fdf0d3;--bad:#b3261e;--bad-bg:#fde8e6;--chip:#eceff4;--focus:#1c3fd1}
+@media (prefers-color-scheme:dark){:root{--bg:#13161b;--panel:#1b1f26;--text:#e7eaf0;--muted:#a3acbb;--line:#2e343f;--field:#737c8d;--accent:#8fa4ff;--accent-ink:#0d1433;--accent-soft:#222943;
+  --ok:#86dd93;--ok-bg:#163421;--warn:#f3c56b;--warn-bg:#3a2b09;--bad:#ffa198;--bad-bg:#451a1b;--chip:#272c36;--focus:#b9c5ff}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.55 system-ui,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+header{display:flex;align-items:center;gap:.9rem;padding:.7rem 1.5rem;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:2}
+header h1{font-size:1.1rem;margin:0;white-space:nowrap}header .tag{color:var(--muted);font-size:.9rem}
+header .status{margin-inline-start:auto;display:inline-flex;align-items:center;gap:.45rem;font-size:.85rem;font-weight:600;color:var(--muted);padding:.2rem .7rem;border-radius:999px;background:var(--chip)}
+header .status::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:currentColor;flex:none}
+header .status.busy{color:var(--warn);background:var(--warn-bg)}header .status.down{color:var(--bad);background:var(--bad-bg)}
+.layout{display:grid;grid-template-columns:288px minmax(0,1fr);min-height:calc(100vh - 53px)}
+aside{border-inline-end:1px solid var(--line);padding:1rem;background:var(--panel)}.nav{display:grid;gap:.5rem}#list{margin-top:1rem}
+main{padding:1.5rem;max-width:960px;width:100%;min-width:0;overflow-wrap:anywhere}
+h2{font-size:1.35rem;line-height:1.25;margin:0}h3{font-size:1.02rem;margin:0 0 .6rem}p{margin:.6rem 0}a{color:var(--accent)}
+button{font:inherit;font-weight:500;min-height:2.35rem;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:.4rem .9rem;border-radius:8px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--field)}button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.primary:hover:not(:disabled){filter:brightness(1.1)}button:disabled{opacity:.55;cursor:default}
+a.button{display:inline-flex;align-items:center;min-height:2.35rem;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:.4rem .9rem;border-radius:8px;font-weight:500;text-decoration:none}a.button:hover{border-color:var(--field)}
+button.link{min-height:0;border:0;padding:0;background:none;color:var(--accent);font-weight:600;text-decoration:underline}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.item{display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;width:100%;text-align:start;border:1px solid transparent;background:none;padding:.5rem .7rem;margin:.15rem 0}
+.item:hover:not(:disabled){background:var(--chip);border-color:transparent}.item.sel,.item.sel:hover:not(:disabled){background:var(--accent-soft);border-color:var(--accent)}
+input,textarea,select{font:inherit;width:100%;padding:.55rem .65rem;border:1px solid var(--field);border-radius:8px;background:var(--panel);color:var(--text)}
+textarea{resize:vertical}input[type=file]{padding:.4rem;border-style:dashed}
+label{display:block;margin:1rem 0 .3rem;font-weight:600}.hint{color:var(--muted);font-size:.88rem;margin:.35rem 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.15rem 1.25rem;margin-bottom:1rem}
+.chip{display:inline-block;padding:.08rem .55rem;border-radius:999px;background:var(--chip);font-size:.78rem;font-weight:600;color:var(--muted)}
+.chip.ok{color:var(--ok);background:var(--ok-bg)}.chip.warn{color:var(--warn);background:var(--warn-bg)}.chip.bad{color:var(--bad);background:var(--bad-bg)}
+.muted{color:var(--muted)}.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.row input,.row select{width:auto;flex:1 1 14rem;min-width:0}.row select{flex:0 0 auto}
+.desc{white-space:pre-wrap;margin:.7rem 0 0}.desc.clamp{max-height:7.8em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+.scope{border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:8px;padding:.7rem .9rem;margin:.9rem 0;background:var(--accent-soft)}
+.scope b{display:block;margin-bottom:.2rem}details{margin:.9rem 0}summary{cursor:pointer;font-weight:600;color:var(--muted)}details p{color:var(--muted);font-size:.92rem}
+.notice{border-radius:8px;padding:.65rem .9rem;margin:.9rem 0;background:var(--warn-bg);border:1px solid var(--warn)}.notice.bad{background:var(--bad-bg);border-color:var(--bad)}
+.actions{margin-top:1rem}.progress{height:.45rem;border-radius:999px;background:var(--chip);overflow:hidden;margin:.4rem 0 1rem}
+.progress span{display:block;height:100%;border-radius:999px;background:var(--ok)}
+.steps{list-style:none;margin:0;padding:0}.steps li{display:grid;grid-template-columns:1.8rem minmax(0,1fr);gap:.7rem;padding:.8rem 0;border-top:1px solid var(--line)}
+.steps li:first-child{border-top:0;padding-top:.2rem}.steps li:last-child{padding-bottom:.1rem}
+.num{width:1.8rem;height:1.8rem;border-radius:50%;background:var(--chip);color:var(--muted);font-weight:700;font-size:.82rem;display:grid;place-items:center}
+.step-done .num{background:var(--ok-bg);color:var(--ok)}.step-running .num,.step-retrying .num{background:var(--warn-bg);color:var(--warn)}.step-failed .num{background:var(--bad-bg);color:var(--bad)}
+.head{display:flex;flex-wrap:wrap;gap:.25rem .6rem;align-items:center}.meta{color:var(--muted);font-size:.88rem;margin-top:.15rem}
+.files,code{font:.84rem ui-monospace,Consolas,monospace}.files{color:var(--muted);margin-top:.15rem}code{background:var(--chip);padding:.1rem .35rem;border-radius:5px}
+.notes{margin:.3rem 0 0;padding-inline-start:1.1rem;color:var(--muted);font-size:.88rem}.steps .notes li{display:list-item;padding:.1rem 0;border:0}
+.banner{display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;padding:.75rem 1rem;border-radius:10px;border:1px solid var(--line);border-inline-start:3px solid var(--warn);background:var(--panel);margin-bottom:1rem}
+.banner>span{flex:1 1 16rem}.err{color:var(--bad);min-height:1.2em}
+.running{display:flex;align-items:center;gap:.7rem;padding:.8rem 1.1rem;border-radius:10px;margin-bottom:1rem;
+  background:var(--warn-bg);border:2px solid var(--warn);font-weight:700;font-size:1.02rem}
+.running .dot{width:.75rem;height:.75rem;border-radius:50%;background:var(--warn);flex:none;animation:pulse 1.2s ease-in-out infinite}
+.running .sub{font-weight:500}.running.waiting{border-width:1px}.running.waiting .dot{animation:none;opacity:.55}
 @keyframes pulse{50%{opacity:.25}}@media (prefers-reduced-motion:reduce){.running .dot{animation:none}}
-iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:10px;background:#fff}pre{white-space:pre-wrap;margin:.3rem 0}
-@media (max-width:760px){.layout{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
+iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:10px;background:#fff}pre{white-space:pre-wrap;margin:.3rem 0;font:.84rem/1.5 ui-monospace,Consolas,monospace}
+@media (max-width:760px){header{padding:.6rem 1rem;gap:.6rem}header .tag{display:none}.layout{grid-template-columns:minmax(0,1fr)}
+  aside{border-inline-end:0;border-bottom:1px solid var(--line);padding:.75rem 1rem}.nav{grid-template-columns:1fr 1fr}
+  #list{display:flex;gap:.4rem;overflow-x:auto;margin-top:.7rem;padding:2px 2px .35rem}#list p{margin:0}
+  .item{flex:0 0 auto;width:auto;max-width:72vw;margin:0;border-color:var(--line)}
+  main{padding:1rem}.card{padding:1rem}button,a.button,input,select{min-height:2.75rem}button.link{min-height:0}iframe{height:420px}}
 </style></head><body>
-<header><h1>Dani Agent</h1><span class="muted">describe it &rarr; approve once &rarr; get the product</span><span class="status" id="status"></span></header>
-<div class="layout"><aside><button class="primary" style="width:100%" id="new">+ New product</button>
-<button style="width:100%;margin-top:.5rem" id="connect">Connect accounts</button><div id="list" style="margin-top:1rem"></div></aside>
+<header><h1>Dani Agent</h1><span class="tag">describe it &rarr; approve once &rarr; get the product</span><span class="status" id="status" role="status"></span></header>
+<div class="layout"><aside><div class="nav"><button class="primary" id="new">+ New product</button>
+<button id="connect">Connect accounts</button></div><nav id="list" aria-label="Products"></nav></aside>
 <main><div id="main"></div><div id="previewBox"></div></main></div>
 <script>
 const TOKEN = document.querySelector('meta[name=dani-token]').content;
@@ -909,8 +942,8 @@ async function post(path, body) {
   const r = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Dani-Token': TOKEN}, body: JSON.stringify(body || {})});
   const data = await r.json(); if (!r.ok) throw new Error(data.error || r.status); return data;
 }
-const LABEL = {awaiting_approval: ['Waiting for your approval', 'warn'], awaiting_review: ['Checking Dani Agent first', 'warn'], approved: ['Approved - queued', 'warn'], planning: ['Planning', 'warn'],
-  building: ['Building', 'warn'], ready: ['Ready', 'ok'], stopped: ['Paused - resumes by itself', 'warn'], cancelled: ['Cancelled', 'bad']};
+const LABEL = {awaiting_approval: ['Waiting for your approval', 'warn'], awaiting_review: ['Checking Dani Agent first', 'warn'], approved: ['Approved, starting soon', 'warn'], planning: ['Planning', 'warn'],
+  building: ['Building', 'warn'], ready: ['Ready', 'ok'], stopped: ['Paused, resumes by itself', 'warn'], cancelled: ['Cancelled', 'bad']};
 LABEL.needs_attention = ['Needs attention', 'bad'];
 const stateOf = p => p.state === 'stopped' && p.cancelled_by_user ? 'cancelled'
   : p.state === 'stopped' && (p.reason || '').includes('ATTACHMENT_') ? 'needs_attention' : p.state;
@@ -943,43 +976,79 @@ const REASONS = [
 const explain = r => { for (const [key, text] of REASONS) if ((r || '').includes(key)) return text; return human(r); };
 const STEP = {done: ['Done', 'ok'], running: ['Running', 'warn'], retrying: ['Trying again', 'warn'], failed: ['Failed', 'bad'], pending: ['Not started', '']};
 const stepChip = s => { const [t, c] = STEP[s] || [s, '']; return el('span', {className: 'chip ' + c, textContent: t}); };
+let listShown = null;
 function renderList() {
   const list = document.getElementById('list');
   const focused = list.contains(document.activeElement) ? document.activeElement.id : null;
   list.replaceChildren();
   if (!state.products.length) list.append(el('p', {className: 'muted', textContent: 'No products yet.'}));
   // Real buttons, so keyboard and screen-reader users can pick any product (CODEX_REVIEW_3 F11).
+  let shown = null;
   for (const p of state.products) {
-    const current = p.id === selected && !creating;
+    const current = p.id === selected && !creating && !connecting;
     const item = el('button', {id: 'product-' + p.id, type: 'button', className: 'item' + (current ? ' sel' : ''),
       onclick: () => { selected = p.id; creating = false; connecting = false; render(); }}, el('bdi', {textContent: p.name}), el('small', {}, chip(stateOf(p))));
-    if (current) item.setAttribute('aria-current', 'page');
+    if (current) { item.setAttribute('aria-current', 'page'); shown = item; }
     list.append(item);
   }
   if (focused) document.getElementById(focused)?.focus({preventScroll: true});
+  // On a phone the list is one scrolling row: bring a newly chosen product into view, once.
+  if (shown && listShown !== selected && shown.scrollIntoView) shown.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  if (shown) listShown = selected;
 }
 // An action's error stays until that action succeeds, through every 2.5-second redraw (CODEX_REVIEW_3 F10).
 const actionErrors = {};
+// A click that is still being answered keeps its buttons disabled through every redraw (2026-11-10: Approve took
+// several seconds, the redraw re-enabled it, and it looked as if nothing had happened and could be sent twice).
+const pending = {};
+// Folded text and long descriptions stay as the user left them through every redraw.
+const opened = {};
+const fold = (key, title, ...kids) => el('details', {open: !!opened[key], ontoggle: e => { opened[key] = e.target.open; }}, el('summary', {textContent: title}), ...kids);
 const ROLE = {codex: 'writing the code', claude: 'reviewing the code', tests: 'running the tests'};
+const PHASE = {product_step: 'Building', product_planning: 'Planning', product_retrying: 'Waiting to try again', claude_milestone_review: 'Checking Dani Agent'};
+const KIND = {offline_tests: 'Self-test', reviewer_profile: 'Claude startup check', codex_preflight: 'Codex sandbox check', codex_diagnostic: 'Codex sandbox check',
+  milestone_review: 'Checking Dani Agent', product_build: 'Building'};
+const SETUP = {offline_tests: 'the self-test: Dani Agent tests its own safety rules on this PC (no AI)', reviewer_profile: 'the Claude startup check (1 tiny session)',
+  codex_preflight: 'the Codex sandbox check', codex_diagnostic: 'the Codex sandbox check (1 tiny session)'};
+const quiet = g => !g.phase || ['idle', 'finished', 'progress_pending'].includes(g.phase) || g.phase.startsWith('normal_');
 function nowRunning() {
   const g = state.progress || {};
-  if (!g.phase || ['idle', 'finished', 'progress_pending'].includes(g.phase) || g.phase.startsWith('normal_')) return null;
-  const product = state.products.find(x => x.id === g.product);
+  if (quiet(g)) return null;
+  const product = state.products.find(x => x.id === g.product), name = product ? product.name + ': ' : '';
+  const waiting = g.phase === 'product_retrying' && g.wait_seconds > 0;   // nothing runs during the pause
   const what = g.phase === 'claude_milestone_review' ? 'checking Dani Agent\'s own code'
     : g.phase === 'product_planning' ? 'planning ' + (product ? product.name : 'the product')
-    : g.phase === 'product_step' ? (product ? product.name + ': ' : '') + 'step ' + g.step + ' of ' + g.of + ', ' + (ROLE[g.role] || human(g.role))
-    : g.phase === 'product_retrying' ? (product ? product.name + ': ' : '') + 'trying ' + g.what + ' again (attempt ' + g.attempt + ')'
-      + (g.wait_seconds ? ' in ' + Math.ceil(g.wait_seconds / 60) + ' min' : '') + ' \u2014 ' + explain(g.reason)
+    : g.phase === 'product_step' ? name + 'step ' + g.step + ' of ' + g.of + ', ' + (ROLE[g.role] || human(g.role))
+    : g.phase === 'product_retrying' ? name + g.what + ', attempt ' + g.attempt + (waiting ? ', in about ' + Math.ceil(g.wait_seconds / 60) + ' min' : '') + ' \u2014 ' + explain(g.reason)
+    : !g.product && SETUP[g.task_kind] ? SETUP[g.task_kind]
     : human(g.phase);
-  const who = g.model ? g.agent + ' ' + g.model + ' \u00b7 effort ' + g.effort : g.role === 'tests' ? 'Tests (no AI model)' : 'Dani Agent';
-  return el('div', {className: 'running', role: 'status'}, el('span', {className: 'dot'}),
-    el('span', {}, 'Now running: ' + who, el('span', {className: 'sub', textContent: ' \u2014 ' + what})));
+  const who = waiting ? 'Waiting to try again'
+    : 'Now running: ' + (g.model ? g.agent + ' ' + g.model + ' \u00b7 effort ' + g.effort : g.role === 'tests' ? 'Tests (no AI model)' : 'Dani Agent');
+  return el('div', {className: 'running' + (waiting ? ' waiting' : ''), role: 'status'}, el('span', {className: 'dot'}),
+    el('span', {}, who, el('span', {className: 'sub', textContent: ' \u2014 ' + what})));
 }
 function banner() {
   // The review runs by itself when a build is approved; only show it while it is happening.
   if (state.review_current || !state.review_task_state) return null;
-  return el('div', {className: 'banner'}, el('b', {textContent: 'Checking Dani Agent\'s own code. '}),
-    'Dani Agent changed since it was last checked. Its source is reviewed in up to 3 Claude sessions, with no review retries. Your build starts by itself only if every part passes.');
+  return el('div', {className: 'banner', role: 'status'}, el('span', {}, el('b', {textContent: 'Checking Dani Agent\'s own code. '}),
+    'Dani Agent changed since it was last checked. Its source is reviewed in up to 3 Claude sessions, with no review retries. Your build starts by itself only if every part passes.'));
+}
+// The checks Dani Agent runs by itself. While only these are unfinished the user has nothing to connect
+// (2026-10-29: "Finish connecting your accounts" showed during the self-test after an update).
+const AUTO_CHECKS = {self_test: 'the self-test', claude_startup: 'the Claude startup check', codex_sandbox: 'the Codex sandbox check'};
+const needsUser = v => !v.missing || !v.missing.length || v.missing.some(k => !(k in AUTO_CHECKS) || (v.checks || {})[k] === 'failed');
+function connectBanner() {
+  if (state.connect_ready !== false) return null;
+  const view = {missing: state.connect_missing, checks: state.connect_checks};
+  const auto = (view.missing || []).length > 0 && view.missing.every(k => k in AUTO_CHECKS);   // only Dani Agent's own checks are open
+  const open = el('button', {textContent: auto ? 'Show the checks' : 'Connect accounts', onclick: () => { connecting = true; render(); }});
+  if (auto && !needsUser(view)) return el('div', {className: 'banner', role: 'status'}, el('span', {}, el('b', {textContent: 'Dani Agent is checking itself. '}),
+    'Your accounts are connected. After an update, Dani Agent runs ' + view.missing.map(k => AUTO_CHECKS[k]).join(', then ')
+    + ' again before it builds. This can take a while; nothing is needed from you.'), open);
+  const failed = (view.missing || []).filter(k => (view.checks || {})[k] === 'failed');
+  if (auto && failed.length) return el('div', {className: 'banner'}, el('span', {}, el('b', {textContent: 'A safety check did not pass. '}),
+    'Building waits until ' + AUTO_CHECKS[failed[0]] + ' passes. Open the checks and choose Retry.'), open);
+  return el('div', {className: 'banner'}, el('span', {textContent: 'Finish connecting your Claude and Codex accounts before building.'}), open);
 }
 const UPLOAD_ERRORS = {
   ATTACHMENT_PDF_SUPPORT_NOT_INSTALLED: 'PDF support is not installed yet. Use Word (.docx) or text, or install the approved PDF reader.',
@@ -1024,9 +1093,9 @@ function renderNew() {
   function drawFiles() {
     uploads.replaceChildren();
     for (const file of current.attachments) {
-      const preview = el('pre', {style: 'white-space:pre-wrap;max-height:12rem;overflow:auto', dir: 'auto', hidden: !current.expanded[file.id], textContent: current.previews[file.id] || ''});
-      uploads.append(el('div', {className: 'card'}, el('bdi', {textContent: file.name}),
-        el('p', {className: 'muted', textContent: Math.ceil(file.size / 1024) + ' KiB · ' + file.characters.toLocaleString() + ' text characters'}),
+      const preview = el('pre', {style: 'max-height:12rem;overflow:auto', dir: 'auto', hidden: !current.expanded[file.id], textContent: current.previews[file.id] || ''});
+      uploads.append(el('div', {className: 'card', style: 'margin:.6rem 0'}, el('b', {}, el('bdi', {textContent: file.name})),
+        el('p', {className: 'hint', style: 'margin-bottom:.6rem', textContent: Math.ceil(file.size / 1024) + ' KiB · ' + file.characters.toLocaleString() + ' text characters'}),
         el('div', {className: 'row'},
           el('button', {type: 'button', textContent: current.expanded[file.id] ? 'Hide extracted text' : 'View extracted text', disabled: current.busy, onclick: async e => {
             try { const response = await fetch('/api/attachments/' + file.id); const data = await response.json();
@@ -1044,7 +1113,7 @@ function renderNew() {
     drawUnused();
   }
   const fileInput = el('input', {id: 'product-files', type: 'file', multiple: true, accept: '.pdf,.docx,.txt,.md,.csv,.json', disabled: current.busy});
-  const createButton = el('button', {className: 'primary', textContent: 'Create and plan budget', disabled: current.busy, onclick: async e => {
+  const createButton = el('button', {className: 'primary', textContent: 'Create draft', disabled: current.busy, onclick: async e => {
     if (current.busy) return;
     current.busy = true; e.target.disabled = true; current.error = ''; err.textContent = '';
     try { const p = await post('/api/products', {name: current.name, description: current.description, kind: current.kind,
@@ -1076,8 +1145,8 @@ function renderNew() {
     el('label', {textContent: 'Type', htmlFor: 'product-kind'}), kind, el('label', {textContent: 'Name', htmlFor: 'product-name'}), name,
     el('label', {textContent: 'What should it do?', htmlFor: 'product-description'}), desc,
     el('label', {textContent: 'Reference files (optional)', htmlFor: 'product-files'}), fileInput,
-    el('p', {className: 'muted', textContent: 'PDF, Word (.docx), TXT, Markdown, CSV or JSON. Up to 5 files, 5 MiB each; 25,000 text characters per file and 50,000 combined including file labels. Text only: images and scanned pages are not read.'}),
-    el('p', {className: 'muted', textContent: 'Files are read locally. After you approve building, their text is shared with your planner, developer and reviewer as project context. This does not train or fine-tune a model. Do not attach passwords or API keys.'}),
+    el('p', {className: 'hint', textContent: 'PDF, Word (.docx), TXT, Markdown, CSV or JSON. Up to 5 files, 5 MiB each; 25,000 text characters per file and 50,000 combined including file labels. Text only: images and scanned pages are not read.'}),
+    el('p', {className: 'hint', textContent: 'Files are read locally. After you approve building, their text is shared with your planner, developer and reviewer as project context. This does not train or fine-tune a model. Do not attach passwords or API keys.'}),
     uploadStatus, uploads,
     el('button', {type: 'button', textContent: 'Manage unused uploads', disabled: current.busy, onclick: async () => {
       if (current.busy) return; current.busy = true;
@@ -1086,7 +1155,7 @@ function renderNew() {
       catch (x) { current.error = uploadError(x.message); err.textContent = current.error; }
       finally { current.busy = false; drawUnused(); }
     }}), unused,
-    el('p', {className: 'muted', textContent: 'Claude decides how many build steps the product needs (usually 2-8).'}), err,
+    el('p', {className: 'hint', style: 'margin-top:1rem', textContent: 'Creating a draft builds nothing and uses no AI session. The next screen shows what you approve; Claude then decides how many build steps the product needs (usually 2-8).'}), err,
     el('div', {className: 'row', style: 'margin-top:1rem'}, createButton,
       el('button', {textContent: 'Cancel', disabled: current.busy, onclick: async () => {
         if (current.busy) return; current.busy = true;
@@ -1102,51 +1171,75 @@ function renderNew() {
 function renderProduct(p) {
   const b = p.budget, s = b.settings, err = el('div', {className: 'err', textContent: actionErrors[p.id] || ''});
   err.setAttribute('role', 'alert');
-  const act = (label, path, primary) => el('button', {className: primary ? 'primary' : '', textContent: label, onclick: async e => {
-    e.target.disabled = true; err.textContent = '';
-    try { await post(path); delete actionErrors[p.id]; } catch (x) { actionErrors[p.id] = label + ': ' + explain(x.message); err.textContent = actionErrors[p.id]; }
-    refresh(); }});
-  const actions = el('div', {className: 'row'});
+  const busy = pending[p.id];
+  const act = (label, path, primary) => el('button', {className: primary ? 'primary' : '', textContent: busy === path ? 'Working\u2026' : label, disabled: !!busy, onclick: async e => {
+    if (pending[p.id]) return;
+    pending[p.id] = path; err.textContent = '';
+    for (const other of actions.children) other.disabled = true;
+    e.target.textContent = 'Working\u2026';
+    try { await post(path); delete actionErrors[p.id]; } catch (x) { actionErrors[p.id] = label + ': ' + explain(x.message); }
+    delete pending[p.id]; await refresh(); if (!typing()) render(); }});
+  const actions = el('div', {className: 'row actions'});
+  const web = (p.kind || 'web') === 'web', ready = p.state === 'ready';
+  const rows = p.steps || [], done = rows.filter(st => st.state === 'done').length, built = ready || done > 0;
+  const cancelled = p.state === 'stopped' && p.cancelled_by_user, attention = stateOf(p) === 'needs_attention';
   if (p.state === 'awaiting_approval') actions.append(act('Approve and build', '/api/products/' + p.id + '/approve', true));
   if (['awaiting_approval', 'awaiting_review', 'approved', 'planning', 'building'].includes(p.state)) actions.append(act('Cancel', '/api/products/' + p.id + '/cancel'));
-  if (p.state === 'stopped') actions.append(act('Build again', '/api/products/' + p.id + '/rebuild', true));
-  if (p.state === 'ready' && p.open_notes) actions.append(act('Polish (Codex acts on ' + p.open_notes + ' review note' + (p.open_notes > 1 ? 's' : '') + ')', '/api/products/' + p.id + '/polish', true));
-  const web = (p.kind || 'web') === 'web';
-  if (web && !p.preview_url && !['approved', 'planning', 'building'].includes(p.state)) actions.append(act('Preview', '/api/products/' + p.id + '/preview'));
+  // A paused build resumes by itself, so Build again is the main action only when it will not.
+  if (p.state === 'stopped') actions.append(act('Build again', '/api/products/' + p.id + '/rebuild', cancelled || attention));
+  // Before the first finished step there is only the empty starter: nothing to preview or download yet.
+  if (web && built && !p.preview_url && !['approved', 'planning', 'building'].includes(p.state)) actions.append(act('Preview', '/api/products/' + p.id + '/preview', ready));
   if (p.preview_url) actions.append(act('Stop preview', '/api/products/' + p.id + '/stop_preview'));
-  actions.append(el('a', {href: '/api/products/' + p.id + '/zip'}, el('button', {textContent: 'Download zip'})), act('Open folder', '/api/products/' + p.id + '/open'));
+  if (ready && p.open_notes) actions.append(act('Polish (Codex acts on ' + p.open_notes + ' review note' + (p.open_notes > 1 ? 's' : '') + ')', '/api/products/' + p.id + '/polish'));
+  if (built) actions.append(el('a', {className: 'button', href: '/api/products/' + p.id + '/zip', textContent: 'Download zip'}));
+  actions.append(act('Open folder', '/api/products/' + p.id + '/open', ready && !web));
   const steps = el('ol', {className: 'steps'});
-  for (const st of p.steps || []) {
-    const detail = el('div', {className: 'muted'}, (st.files || []).join(', '));
-    if (st.difficulty) detail.append(el('div', {textContent: 'Difficulty: ' + st.difficulty + (st.models ? ' \u00b7 Codex ' + st.models.codex.model + ' (' + st.models.codex.effort
+  rows.forEach((st, i) => {
+    const body = el('div', {}, el('div', {className: 'head'}, el('b', {dir: 'auto', textContent: st.title}), stepChip(st.state)));
+    if ((st.files || []).length) body.append(el('div', {className: 'files', textContent: st.files.join(', ')}));
+    if (st.difficulty) body.append(el('div', {className: 'meta', textContent: 'Difficulty: ' + st.difficulty + (st.models ? ' \u00b7 Codex ' + st.models.codex.model + ' (' + st.models.codex.effort
       + ' effort) \u00b7 Claude ' + st.models.claude.model + ' (' + st.models.claude.effort + ' effort)' : '')}));
-    if (st.tests) detail.append(el('div', {textContent: 'Tests: ' + st.tests.tests + ' run, ' + (st.tests.failures + st.tests.errors) + ' failed'}));
-    if (st.review) detail.append(el('div', {textContent: 'Claude review: ' + st.review.verdict + ' (' + st.review.findings.length + ' notes)'}));
-    if (st.reason && st.state === 'failed') detail.append(el('div', {className: 'err', textContent: explain(st.reason)}));
-    if (st.developer_summary && (st.state === 'failed' || st.polish)) detail.append(el('pre', {className: 'muted', textContent: 'Codex said: ' + st.developer_summary}));
-    if (st.review && st.review.findings.length && !st.polish) detail.append(el('div', {className: 'muted',
-      textContent: 'Review notes: ' + st.review.findings.map(f => f.file + ': ' + f.explanation).join(' | ')}));
-    if (st.polish && st.notes) detail.append(el('div', {className: 'muted', textContent: 'Codex was shown ' + st.notes.length + ' review note' + (st.notes.length === 1 ? '' : 's') + '.'}));
-    steps.append(el('li', {}, el('b', {textContent: st.title + ' '}), stepChip(st.state), detail));
-  }
+    const results = [];
+    if (st.tests) results.push('Tests: ' + st.tests.tests + ' run, ' + (st.tests.failures + st.tests.errors) + ' failed');
+    if (st.review) results.push('Claude review: ' + st.review.verdict + ' (' + st.review.findings.length + ' note' + (st.review.findings.length === 1 ? '' : 's') + ')');
+    if (results.length) body.append(el('div', {className: 'meta', textContent: results.join(' \u00b7 ')}));
+    if (st.reason && st.state === 'failed') body.append(el('div', {className: 'err', textContent: explain(st.reason)}));
+    if (st.reason && st.state === 'retrying') body.append(el('div', {className: 'meta', textContent: explain(st.reason)}));
+    if (st.developer_summary && (st.state === 'failed' || st.polish)) body.append(el('pre', {className: 'muted', dir: 'auto', textContent: 'Codex said: ' + st.developer_summary}));
+    if (st.review && st.review.findings.length && !st.polish) body.append(el('ul', {className: 'notes'},
+      st.review.findings.map(f => el('li', {}, el('code', {textContent: f.file}), ' ' + f.explanation))));
+    if (st.polish && st.notes) body.append(el('div', {className: 'meta', textContent: 'Codex was shown ' + st.notes.length + ' review note' + (st.notes.length === 1 ? '' : 's') + '.'}));
+    steps.append(el('li', {className: 'step-' + (st.state || 'pending')}, el('span', {className: 'num', textContent: String(i + 1)}), body));
+  });
+  const bar = el('div', {className: 'progress'}, el('span', {style: 'width:' + (rows.length ? Math.round(100 * done / rows.length) : 0) + '%'}));
+  bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', 'Steps done');
+  bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', String(rows.length)); bar.setAttribute('aria-valuenow', String(done));
   const howTo = web ? 'Run it yourself: Open folder, type cmd in the address bar, run  node server.mjs  and open http://localhost:3000 (Ctrl+C stops it).'
     : 'Run it yourself: Open folder, type cmd in the address bar, run  python main.py   (tests: python -m unittest).';
-  return [el('div', {className: 'card'}, el('div', {className: 'row'}, el('h2', {textContent: p.name, style: 'margin:0'}), chip(stateOf(p)),
+  const scope = (rows.length ? 'Plan: ' + rows.length + ' steps (Claude decided). ' : 'Claude decides the number of steps (up to ' + b.max_steps + '). ')
+    + 'Each step uses 1 Codex + 1 Claude session, up to ' + s.max_codex_sessions + ' + ' + s.max_claude_sessions + ' if corrections are needed, plus 1 Claude planning session. If Dani Agent source has changed, approval also covers up to 3 independent Claude source-review sessions with no review retries. A step that still does not pass is tried again, as often as it takes, with pauses of up to an hour between tries; those tries use more sessions than this. No time limit: a session runs as long as it is working. Subscriptions only, no API fallback.';
+  const text = p.description || '', long = text.length > 420 || text.split('\n').length > 6, whole = !!opened['description-' + p.id];
+  return [el('div', {className: 'card'}, el('div', {className: 'row'}, el('h2', {dir: 'auto', textContent: p.name}), chip(stateOf(p)),
       el('span', {className: 'chip', textContent: state.kinds[p.kind || 'web']})),
-      el('pre', {className: 'muted', textContent: p.description}),
-      (p.attachments || []).length ? el('div', {}, el('b', {textContent: 'Reference files shared on build approval'}), (p.attachments || []).map(f => el('p', {dir: 'auto', textContent: f.name + ' · ' + f.characters.toLocaleString() + ' text characters'}))) : null,
-      el('p', {className: 'muted', textContent: ((p.steps || []).length ? 'Plan: ' + p.steps.length + ' steps (Claude decided). ' : 'Claude decides the number of steps (up to ' + b.max_steps + '). ')
-        + 'Each step uses 1 Codex + 1 Claude session, up to ' + s.max_codex_sessions + ' + ' + s.max_claude_sessions + ' if corrections are needed, plus 1 Claude planning session. If Dani Agent source has changed, approval also covers up to 3 independent Claude source-review sessions with no review retries. A step that still does not pass is tried again, as often as it takes, with pauses of up to an hour between tries; those tries use more sessions than this. No time limit: a session runs as long as it is working. Subscriptions only, no API fallback.'}),
-      p.reason && p.state === 'stopped' ? el('p', {className: p.cancelled_by_user ? 'err' : 'muted', textContent: p.cancelled_by_user
+      text ? el('p', {className: 'desc' + (long && !whole ? ' clamp' : ''), dir: 'auto', textContent: text}) : null,
+      long ? el('button', {type: 'button', className: 'link', textContent: whole ? 'Show less' : 'Show the whole description', onclick: () => { opened['description-' + p.id] = !whole; render(); }}) : null,
+      (p.attachments || []).length ? el('p', {className: 'meta'}, el('b', {textContent: 'Reference files shared on build approval: '}),
+        (p.attachments || []).flatMap((f, i) => [i ? ', ' : null, el('bdi', {textContent: f.name}), ' (' + f.characters.toLocaleString() + ' text characters)'])) : null,
+      p.reason && p.state === 'stopped' ? el('p', {className: 'notice' + (cancelled ? ' bad' : ''), textContent: cancelled
         ? 'Cancelled by you. Automatic work on this product is off until you click Build again.'
         : 'Paused: ' + explain(p.reason) + (p.resume_after ? ' Dani Agent tries again by itself at ' + new Date(p.resume_after).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) + '.'
           : ' Dani Agent resumes it by itself.') + ' Finished steps are kept.'}) : null,
       p.polish_reason ? el('p', {className: 'muted', textContent: 'A polish pass did not pass (' + explain(p.polish_reason) + '). The product is unchanged; the notes it was given are set aside.'}) : null,
       p.build_mode === 'polish' && p.state === 'awaiting_approval' ? el('p', {className: 'muted', textContent: 'Polish: Codex reads each open review note, fixes the ones it agrees with and explains the rest; tests and Claude review it like any step.'}) : null,
+      // What an approval covers is in full view while it is being asked for, and one click away afterwards.
+      p.state === 'awaiting_approval' ? el('div', {className: 'scope'}, el('b', {textContent: 'What you approve'}), scope)
+        : fold('scope-' + p.id, 'What the approval covers', el('p', {textContent: scope})),
       actions, err),
-    el('div', {className: 'card'}, el('h3', {textContent: 'Build plan', style: 'margin-top:0'}),
-      (p.steps || []).length ? steps : el('p', {className: 'muted', textContent: 'Claude writes the plan after you approve.'})),
-    el('p', {className: 'muted', textContent: howTo}), el('p', {className: 'muted', textContent: 'Folder: ' + p.app})].filter(Boolean);
+    el('div', {className: 'card'}, el('div', {className: 'row', style: 'justify-content:space-between'}, el('h3', {textContent: 'Build plan', style: 'margin:0'}),
+        rows.length ? el('span', {className: 'muted', textContent: done + ' of ' + rows.length + ' steps done'}) : null),
+      rows.length ? [bar, steps] : el('p', {className: 'muted', textContent: 'Claude writes the plan after you approve.'})),
+    el('div', {className: 'card'}, el('h3', {textContent: 'Files'}), el('p', {}, 'Folder: ', el('code', {dir: 'ltr', textContent: p.app})),
+      el('p', {className: 'hint', textContent: howTo}))].filter(Boolean);
 }
 function renderPreview(p) {
   // Its own box, redrawn only when the preview starts or stops: re-inserting an iframe reloads the app.
@@ -1178,32 +1271,40 @@ const btn = (label, action, body, primary) => el('button', {className: primary ?
 function renderConnect() {
   if (!conn) { connectCall(); return [el('p', {className: 'muted', textContent: 'Checking this PC...'})]; }
   const c = conn, cards = [];
-  cards.push(el('div', {className: 'card'}, el('h2', {textContent: 'Connect your own accounts', style: 'margin-top:0'}),
+  // Each numbered step says whether it is done, needs the user, or runs by itself.
+  const head = (title, [label, kind]) => el('div', {className: 'row', style: 'margin-bottom:.6rem'}, el('h3', {textContent: title, style: 'margin:0'}),
+    el('span', {className: 'chip ' + kind, textContent: label}));
+  const tag = good => good ? ['Done', 'ok'] : ['Needs you', 'warn'];
+  const L = c.login || {}, f = c.folder || {}, states = Object.values(c.checks || {});
+  const programsOk = Object.keys(TOOL).every(name => c.tools[name] && c.tools[name].ok);
+  const signedIn = ['codex', 'claude'].every(name => L[name] && L[name].ok) && !(L.environment_inherited || []).length && !(L.environment_in_windows || []).length;
+  cards.push(el('div', {className: 'card'}, el('h2', {textContent: 'Connect your own accounts'}),
     el('p', {className: 'muted', textContent: 'Dani Agent runs the official Claude Code and Codex programs on this PC with the accounts you are signed in to. It never sees or stores passwords or tokens, and uses only your subscriptions (no API keys).'}),
-    c.ready ? el('p', {}, ok(true, 'Ready to build', '')) : null, el('div', {className: 'err', textContent: connErr})));
-  const programs = el('div', {className: 'card'}, el('h3', {textContent: '1. Programs', style: 'margin-top:0'}));
+    c.ready ? el('p', {}, ok(true, 'Ready to build', '')) : el('p', {className: 'hint', textContent: 'Steps 1 to 3 need you. Steps 4 and 5 then run by themselves.'}),
+    el('div', {className: 'err', textContent: connErr})));
+  const programs = el('div', {className: 'card'}, head('1. Programs', tag(programsOk)));
   for (const [name, label] of Object.entries(TOOL)) {
     const t = c.tools[name], rows = (c.found || {})[name] || [];
     programs.append(el('div', {className: 'row', style: 'margin-top:.6rem'}, el('b', {textContent: label}),
-      ok(t && t.ok, t ? t.version : '', 'Not set'), el('span', {className: 'muted', textContent: t ? t.path : ''})));
+      ok(t && t.ok, t ? t.version : '', 'Not set'), el('span', {className: 'files', dir: 'ltr', textContent: t ? t.path : ''})));
     for (const r of rows) programs.append(el('div', {className: 'row muted', style: 'margin-left:1rem'}, r.path + ' ' + (r.version || ''),
       r.problem ? el('span', {className: 'err', textContent: r.problem}) : btn('Use this', 'confirm', {tool: name, path: r.path})));
     if (c.found && !rows.length && !t) programs.append(el('div', {className: 'muted', style: 'margin-left:1rem', textContent: 'Not found. ' + c.install[name]}));
   }
-  const custom = el('input', {placeholder: 'Or paste the full path of a program .exe'}), which = el('select', {style: 'width:auto'},
+  const custom = el('input', {placeholder: 'Or paste the full path of a program .exe'}), which = el('select', {},
     Object.entries(TOOL).map(([k, v]) => el('option', {value: k, textContent: v})));
   programs.append(el('div', {className: 'row', style: 'margin-top:.8rem'}, btn('Find programs', 'discover', {}, !c.found)),
     el('div', {className: 'row', style: 'margin-top:.5rem'}, which, custom,
       el('button', {textContent: 'Use path', onclick: () => connectCall('confirm', {tool: which.value, path: custom.value})})));
+  custom.setAttribute('aria-label', 'Full path of a program'); which.setAttribute('aria-label', 'Program');
   cards.push(programs);
-  const signIn = el('div', {className: 'card'}, el('h3', {textContent: '2. Sign in (subscription)', style: 'margin-top:0'}));
+  const signIn = el('div', {className: 'card'}, head('2. Sign in (subscription)', tag(signedIn)));
   for (const [name, label, how] of [['codex', 'Codex', 'Sign in with ChatGPT'], ['claude', 'Claude', 'Sign in with your Claude plan']]) {
     const l = (c.login || {})[name];
     signIn.append(el('div', {className: 'row', style: 'margin-top:.4rem'}, el('b', {textContent: label}),
       ok(l && l.ok, 'Signed in' + (l && l.plan ? ' (' + l.plan + ')' : ''), !l ? 'Confirm the program first' : l.signed_in ? 'Signed in with an API key or console account - not supported' : 'Not signed in'),
       l && !l.ok ? btn(how, 'login', {tool: name}) : null));
   }
-  const L = c.login || {};
   if ((L.environment_inherited || []).length) signIn.append(el('p', {className: 'err', textContent: 'Dani Agent was started by a program that sets '
     + L.environment_inherited.join(', ') + ' (for example a terminal or a developer tool). These are not your account settings, and they would send '
     + 'Claude or Codex somewhere other than your subscription. Close Dani Agent and start it again from File Explorer with Start-Dani-Dashboard.cmd. '
@@ -1213,9 +1314,10 @@ function renderConnect() {
     + ' (or the system ones), delete it, then restart Dani Agent.'}));
   signIn.append(el('div', {className: 'row', style: 'margin-top:.6rem'}, el('span', {className: 'muted', textContent: 'Sign-in opens a window; finish it in your browser, then'}), btn('Check again', 'refresh', {})));
   cards.push(signIn);
-  const f = c.folder || {}, where = el('input', {placeholder: 'e.g. D:\\DaniAgent', value: f.path || ''});
-  cards.push(el('div', {className: 'card'}, el('h3', {textContent: '3. Private work folder', style: 'margin-top:0'}),
-    el('div', {className: 'row'}, el('span', {textContent: f.path || ''}), ok(f.ready, 'Private (only you and Windows)', f.exists ? 'Not private' : 'Not created')),
+  const where = el('input', {placeholder: 'e.g. D:\\DaniAgent', value: f.path || ''});
+  where.setAttribute('aria-label', 'Work folder path');
+  cards.push(el('div', {className: 'card'}, head('3. Private work folder', tag(f.ready)),
+    el('div', {className: 'row'}, el('code', {dir: 'ltr', textContent: f.path || ''}), ok(f.ready, 'Private (only you and Windows)', f.exists ? 'Not private' : 'Not created')),
     !f.exists ? el('div', {style: 'margin-top:.6rem'}, btn('Create private folder', 'lock', {}, true)) : f.private && !f.ready ? btn('Finish folder', 'lock', {}) : null,
     f.exists && !f.private ? el('p', {className: 'err', textContent: 'This folder already exists and other accounts can open it. Dani Agent will not change it: pick another folder below, or rename it and click Check again.'}) : null,
     el('p', {className: 'muted', textContent: 'Your products and work files live here. You can use another folder: it must be on a fixed NTFS drive of this PC and outside your user folder (Codex\'s sandbox cannot work inside C:\\Users). Dani Agent makes it private and moves your products into it.'}),
@@ -1223,12 +1325,14 @@ function renderConnect() {
   const chk = (key, label, detail, retry) => { const st = (c.checks || {})[key] || 'waiting', [t, cls] = CHECK[st];
     return el('div', {className: 'row', style: 'margin:.45rem 0'}, el('b', {textContent: label}), el('span', {className: 'chip ' + cls, textContent: t}),
       el('span', {className: 'muted', textContent: detail}), st === 'failed' ? btn('Retry', retry, {}) : null); };
-  cards.push(el('div', {className: 'card'}, el('h3', {textContent: '4. Automatic safety checks', style: 'margin-top:0'}),
+  cards.push(el('div', {className: 'card'}, head('4. Automatic safety checks', states.length > 0 && states.every(v => v === 'passed') ? ['Done', 'ok']
+      : states.includes('failed') ? ['A check failed', 'bad'] : states.some(v => v === 'running' || v === 'queued') ? ['Running by itself', 'warn']
+      : ['Waits for the steps above', '']),
     el('p', {className: 'muted', textContent: 'These run by themselves, in this order, once the steps above are done. Each runs once per Dani Agent or program version.'}),
     chk('self_test', 'Self-test', 'no AI, about 10 minutes: Dani Agent tests its own safety rules on this PC', 'selftest'),
     chk('claude_startup', 'Claude startup check', '1 tiny Claude session: proves Claude starts with no tools, so it can only read and reply', 'reviewer'),
     chk('codex_sandbox', 'Codex sandbox check', '1 tiny Codex session: proves Codex\'s sandbox works on this PC', 'hostcheck')));
-  const models = el('div', {className: 'card'}, el('h3', {textContent: '5. Models on your plans', style: 'margin-top:0'}),
+  const models = el('div', {className: 'card'}, el('h3', {textContent: '5. Models on your plans'}),
     el('p', {className: 'muted', textContent: 'Read from Codex and Claude Code themselves; nothing is sent to test them. For every build step, Claude rates how hard it is and Dani Agent picks the model and effort: simple = low effort, normal = medium, hard = high effort with the strongest model. A model your plan refuses is skipped from then on.'}));
   for (const [name, label] of [['codex', 'Codex'], ['claude', 'Claude']]) {
     const m = (c.models || {})[name] || {available: [], refused: []}, every = (c.everyday || {})[name];
@@ -1244,6 +1348,7 @@ function renderConnect() {
   cards.push(models);
   return cards;
 }
+const typing = () => { const active = document.activeElement; return !!draft.busy || !!(active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)); };
 function render() {
   if (!state) return; renderList();
   const main = document.getElementById('main'); main.replaceChildren();
@@ -1251,8 +1356,7 @@ function render() {
   if (state.offline_only) main.append(el('div', {className: 'banner', textContent: 'Model-free validation mode: self-tests and product drafts are available. AI sessions and approvals are disabled in this launch.'}));
   const n = nowRunning(); if (n) main.append(n);
   if (connecting) { main.append(...renderConnect()); renderPreview(null); return; }
-  if (state.connect_ready === false) main.append(el('div', {className: 'banner'}, 'Finish connecting your Claude and Codex accounts before building. ',
-    el('button', {textContent: 'Connect accounts', onclick: () => { connecting = true; render(); }})));
+  const c = connectBanner(); if (c) main.append(c);
   const b = banner(); if (b) main.append(b);
   const p = state.products.find(x => x.id === selected);
   if (creating || !p) main.append(state.products.length && !creating ? el('p', {className: 'muted', textContent: 'Select a product or create a new one.'}) : renderNew());
@@ -1260,17 +1364,33 @@ function render() {
   renderPreview(p);
 }
 async function refresh() {
+  const status = document.getElementById('status');
   try { const r = await fetch('/api/state'); if (r.status === 403) { location.reload(); return; } state = await r.json(); }
-  catch { document.getElementById('status').textContent = 'Dani Agent is not running'; return; }
-  const ph = state.progress && state.progress.phase;
-  document.getElementById('status').textContent = ph && ph !== 'idle' ? 'Working: ' + human(ph) : 'Idle';
+  catch { status.textContent = 'Dani Agent is not running'; status.className = 'status down'; return; }
+  const g = state.progress || {}, working = !quiet(g);
+  status.textContent = working ? (PHASE[g.phase] || KIND[g.task_kind] || human(g.phase)) : 'Idle';
+  status.className = 'status' + (working ? ' busy' : '');
   if (!selected && state.products.length && !creating) selected = state.products[0].id;
-  const active = document.activeElement; if (!draft.busy && !(active && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName))) render();
+  if (!typing()) render();
+}
+// Readiness is asked again while it is not reached: the answer the page got when it opened is not the answer
+// after the self-test finishes (2026-10-29: the "finish connecting" banner stayed until the page was reloaded).
+let connectAsked = 0;
+async function recheckConnect() {
+  connectAsked = Date.now();
+  try { const r = await fetch('/api/connect'); if (!r.ok) return; conn = await r.json(); } catch { return; }
+  if (state) Object.assign(state, {connect_ready: conn.ready, connect_missing: conn.missing, connect_checks: conn.checks});
+  if (!typing()) render();   // never while a path is being typed on the Connect page
 }
 document.getElementById('new').onclick = () => { creating = true; connecting = false; render(); };
 document.getElementById('connect').onclick = () => { connecting = true; conn = null; render(); };
-setInterval(() => { if (connecting && conn && Object.values(conn.checks || {}).some(v => v === 'queued' || v === 'running')) connectCall(); }, 5000);
-refresh().then(() => { if (state && state.connect_ready !== true) fetch('/api/connect').then(r => r.json()).then(v => { conn = v;
-  if (!v.ready) connecting = true; state.connect_ready = v.ready; render(); }).catch(() => {}); });
+setInterval(() => {
+  if (!state) return;
+  const checking = conn && Object.values(conn.checks || {}).some(v => v === 'queued' || v === 'running');
+  if (connecting ? checking : state.connect_ready === false && Date.now() - connectAsked > 15000) return recheckConnect();
+}, 5000);
+refresh().then(() => { if (state && state.connect_ready !== true) fetch('/api/connect').then(r => r.json()).then(v => { conn = v; connectAsked = Date.now();
+  if (!v.ready && needsUser(v)) connecting = true;   // the checks Dani Agent runs by itself do not take over the page
+  Object.assign(state, {connect_ready: v.ready, connect_missing: v.missing, connect_checks: v.checks}); render(); }).catch(() => {}); });
 setInterval(refresh, 2500);
 </script></body></html>"""

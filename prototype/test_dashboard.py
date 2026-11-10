@@ -97,6 +97,13 @@ class DashboardTests(DashboardCase):
         self.assertEqual(status, 200)
         self.assertIn(b'content="secret-token"', page)
 
+    def test_state_reports_which_setup_steps_are_open(self):
+        # The page tells "connect your accounts" from "Dani Agent is checking itself" by these (2026-11-10).
+        self.dash.connect_cache = {'ready': False, 'missing': ['self_test'], 'checks': {'self_test': 'running'}}
+        state = json.loads(self.request('GET', '/api/state')[2])
+        self.assertEqual((state['connect_ready'], state['connect_missing'], state['connect_checks']),
+                         (False, ['self_test'], {'self_test': 'running'}))
+
     def test_foreign_host_origin_or_missing_token_is_refused(self):
         self.assertEqual(self.request('GET', '/api/state', host='evil.example')[0], 403)        # DNS rebinding
         self.assertEqual(self.request('POST', '/api/products', {'name': 'x'}, token=False)[0], 403)
@@ -833,7 +840,7 @@ ATTACHMENT_SCENARIO = """
   const picker = document.getElementById('product-files');
   if (!picker.multiple || !picker.accept.includes('.docx') || !picker.accept.includes('.pdf')) throw new Error('File picker is missing');
   if (document.getElementById('product-description').value !== '') throw new Error('Document-only form unexpectedly needs typed text');
-  button('Manage unused uploads'); button('Remove ' + doc.name); button('Create and plan budget');
+  button('Manage unused uploads'); button('Remove ' + doc.name); button('Create draft');
   await click('View extracted text');
   if (preview().hidden || preview().textContent !== literal || preview().children.length) throw new Error('Preview is missing or parsed as HTML');
   await refresh();
@@ -857,8 +864,99 @@ ATTACHMENT_SCENARIO = """
 """
 
 
+USABILITY_SCENARIO = """
+(async () => {
+  await new Promise(r => setImmediate(r));
+  const all = () => descendants(document.getElementById('main'));
+  const buttons = () => all().filter(item => item.tagName === 'BUTTON');
+  const button = text => buttons().find(item => item.textContent === text);
+  const text = () => document.getElementById('main').textContent;
+  const draftProduct = {...DATA.state.products[0], id: 'draft0000001', name: 'Draft', state: 'awaiting_approval', steps: [], preview_url: null,
+    description: '\\u06cc\\u06a9 \\u0628\\u0631\\u0646\\u0627\\u0645\\u0647'};
+  const paused = {...draftProduct, id: 'paused000001', name: 'Paused', state: 'stopped', reason: 'PRODUCT_STEP_1_QUOTA_EXHAUSTED'};
+  const cancelled = {...paused, id: 'cancel000001', name: 'Cancelled', cancelled_by_user: true};
+  DATA.state.products.push(draftProduct, paused, cancelled);
+  DATA.state.progress = {phase: 'idle'}; DATA.state.review_task_state = null;
+  connecting = false; creating = false; selected = draftProduct.id; await refresh();
+
+  // 1. A click that is still being answered stays disabled through the 2.5-second redraw, and is sent once.
+  let release, sent = 0;
+  const answer = globalThis.fetch;
+  globalThis.fetch = async (path, options = {}) => {
+    if (String(path).endsWith('/approve')) { sent += 1; await new Promise(r => { release = r; }); return {status: 200, ok: true, json: async () => ({})}; }
+    return answer(path, options);
+  };
+  const approve = button('Approve and build');
+  if (!approve || approve.disabled || approve.className !== 'primary') throw new Error('Approve is not the main action of a draft');
+  const clicked = approve.onclick({target: approve});
+  await new Promise(r => setImmediate(r));
+  await refresh();                                   // the page's own polling redraws everything
+  const redrawn = buttons();
+  if (!redrawn.length || redrawn.some(item => !item.disabled)) throw new Error('A redraw re-enabled the buttons of a pending action');
+  if (!button('Working\\u2026')) throw new Error('The pending action does not say it is working');
+  await redrawn[0].onclick({target: redrawn[0]});    // a second click while pending sends nothing
+  if (sent !== 1) throw new Error('The pending action was sent ' + sent + ' times');
+  release(); await clicked;
+  if (buttons().some(item => item.disabled)) throw new Error('Buttons stayed disabled after the answer');
+
+  // 2. Nothing to preview or download before a step is done; a right-to-left description keeps its direction.
+  if (button('Preview') || all().some(item => item.tagName === 'A')) throw new Error('A draft offers Preview or Download');
+  const description = all().find(item => item.tagName === 'P' && item.textContent === draftProduct.description);
+  if (!description || description.dir !== 'auto') throw new Error('The description has no automatic text direction');
+  if (!text().includes('What you approve') || !text().includes('tried again, as often as it takes')) throw new Error('The approval scope is not in full view');
+
+  // 3. A paused build resumes by itself: Build again is the main action only after the user's own Cancel.
+  selected = paused.id; render();
+  if (!button('Build again') || button('Build again').className === 'primary') throw new Error('Paused: Build again must not be the main action');
+  if (!text().includes('resumes it by itself')) throw new Error('Paused: no automatic-resume text');
+  selected = cancelled.id; render();
+  if (button('Build again').className !== 'primary') throw new Error('Cancelled: Build again must be the main action');
+
+  // 4. Only Dani Agent's own checks are open: the page does not ask the user to connect accounts.
+  const banner = () => all().find(item => item.className === 'banner');
+  Object.assign(state, {connect_ready: false, connect_missing: ['self_test', 'claude_startup'], connect_checks: {self_test: 'running', claude_startup: 'waiting', codex_sandbox: 'passed'}});
+  render();
+  if (!banner() || !banner().textContent.includes('checking itself') || banner().textContent.includes('Finish connecting')) throw new Error('Self-check shown as a connect request');
+  state.connect_checks.self_test = 'failed'; render();
+  if (!banner().textContent.includes('did not pass')) throw new Error('A failed check is not reported');
+  state.connect_missing = ['sign_in', 'self_test']; render();
+  if (!banner().textContent.includes('Finish connecting')) throw new Error('A missing sign-in is not reported');
+
+  // 5. Readiness is asked again while it is not reached, and the answer clears the banner without a reload.
+  const paths = [];
+  globalThis.fetch = async path => { paths.push(String(path)); return {status: 200, ok: true, json: async () => String(path).includes('connect') ? {...DATA.conn, ready: true, missing: []} : DATA.state}; };
+  connectAsked = 0;
+  for (const f of intervals) await f();
+  if (!paths.includes('/api/connect')) throw new Error('Readiness was not asked again');
+  if (state.connect_ready !== true || banner()) throw new Error('The banner stayed after the checks passed');
+
+  // 6. While a path is being typed on the Connect page, the background recheck does not redraw it.
+  connecting = true; conn = {...DATA.conn}; render();
+  const field = all().find(item => item.tagName === 'INPUT' && item.placeholder.startsWith('Or paste'));
+  field.value = 'C:/typed/half'; field.focus();
+  await recheckConnect();
+  if (document.activeElement !== field || !document.getElementById('main').contains(field)) throw new Error('The recheck replaced a field being typed in');
+
+  // 7. A self-test is named, and a retry pause is not called "running".
+  connecting = false; selected = paused.id;
+  state.progress = {phase: 'starting', task_kind: 'offline_tests'}; render();
+  if (!nowRunning().textContent.includes('self-test')) throw new Error('The self-test is not named');
+  state.progress = {phase: 'product_retrying', product: paused.id, what: 'step 1', attempt: 2, wait_seconds: 600, reason: 'QUOTA_EXHAUSTED'};
+  if (nowRunning().textContent.includes('Now running') || !nowRunning().textContent.includes('Waiting to try again')) throw new Error('A pause is shown as running');
+  console.log('USABILITY_OK');
+})().catch(e => { console.error(e && e.stack || e); process.exit(1); });
+"""
+
+
 class PageScriptTests(unittest.TestCase):
     """2026-10-22: the Python tests never ran the page's JavaScript, so a ReferenceError shipped. Run it."""
+
+    def test_pending_actions_banners_and_status_lines_say_what_is_true(self):
+        # 2026-11-10: the redraw re-enabled a pending Approve; "finish connecting" showed during a self-test and
+        # stayed until a reload; a paused build's main button was Build again; a pause was called "Now running".
+        out = self.run_page(D.PAGE, USABILITY_SCENARIO)
+        self.assertEqual(out.returncode, 0, out.stderr[-2000:])
+        self.assertIn('USABILITY_OK', out.stdout)
 
     def page_data(self):
         step = {'title': 'Firework', 'files': ['public/app.js'], 'state': 'running', 'difficulty': 'hard',

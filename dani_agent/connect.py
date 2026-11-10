@@ -622,10 +622,15 @@ def status(store, login=None, folder=None):
               'claude_startup': check_state(tasks, ('reviewer_profile',), reviewer == 'current'),
               'codex_sandbox': check_state(tasks, ('codex_preflight', 'codex_diagnostic'), host)}
     login = login or {}
-    ready = (all(tools[n] and tools[n]['ok'] for n in TOOLS) and (login.get('codex') or {}).get('ok') is True
-             and (login.get('claude') or {}).get('ok') is True and not login.get('environment_overrides')
-             and (folder or {}).get('ready') is True and self_test and reviewer == 'current' and host and bool(automatic))
+    # What is still open, in the page's order. The page tells "connect your accounts" (the first three need the
+    # user) from "Dani Agent is checking itself" (the three checks it runs by itself after an update).
+    parts = (('programs', all(tools[n] and tools[n]['ok'] for n in TOOLS)),
+             ('sign_in', (login.get('codex') or {}).get('ok') is True and (login.get('claude') or {}).get('ok') is True
+                         and not login.get('environment_overrides')),
+             ('folder', (folder or {}).get('ready') is True), ('self_test', bool(self_test)),
+             ('claude_startup', reviewer == 'current'), ('codex_sandbox', bool(host)), ('models', bool(automatic)))
+    missing = [name for name, good in parts if not good]
     return {'tools': tools, 'install': INSTALL, 'login': login, 'folder': folder, 'self_test': self_test,
             'reviewer_profile': reviewer, 'codex_host_check': host, 'checks': checks, 'models': models(),
             'everyday': {role: automatic[role + '_model'] for role in ('codex', 'claude')} if automatic else None,
-            'ready': ready}
+            'ready': not missing, 'missing': missing}

@@ -250,7 +250,7 @@ class MilestoneBatchTests(unittest.TestCase):
             self.assertEqual(progress['completed_review_batches'], 1)
             self.assertEqual(progress['review']['findings'], [self.finding('medium')])
             self.assertEqual(progress['reason'], 'MILESTONE_FINDINGS_REQUIRE_CORRECTION')
-            with patch.object(R, 'reviews', side_effect=lambda: iter([(rejected_run, plan)])):
+            with patch.object(R, 'review_index', return_value=[(rejected_run, R.brief(plan))]):
                 self.assertTrue(check_rejection(payload['candidate_sha']))
                 with self.fixture(sources) as (later_run, _):
                     later_payload = R.prepare()
@@ -275,7 +275,7 @@ class MilestoneBatchTests(unittest.TestCase):
                 (run / 'artifacts/milestone_progress.json').write_text(json.dumps(progress))
                 if case != 'unapproved':
                     (run / 'artifacts/local_live_approval.json').write_text('{}')
-                with patch.object(R, 'reviews', return_value=iter([(run, plan)])):
+                with patch.object(R, 'review_index', return_value=[(run, R.brief(plan))]):
                     self.assertEqual(R.material_rejection(candidate), case == 'valid')
 
     def test_interrupted_review_cannot_replay_any_already_attempted_batch(self):

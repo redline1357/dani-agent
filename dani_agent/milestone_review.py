@@ -6,9 +6,12 @@ independent review, so it is listed, not resent. Changed files come as diffs plu
 the security core is always included in full. Full reviews use at most three sequential evidence
 batches, each with the full security core, when the complete source no longer fits one session.
 """
+import datetime
 import difflib
 import hashlib
 import json
+import os
+from pathlib import Path
 import runpy
 import stat
 
@@ -50,35 +53,113 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def passed(run, plan):
-    """A live review of exactly plan['sources'] that passed with LOW advice at most."""
+def brief(plan):
+    """What the checks compare in a plan, so its full sources (about 1 MB) need not be read again."""
+    known = type(plan) is dict and 'sources' in plan
+    return {'candidate_sha': plan.get('candidate_sha') if type(plan) is dict else None,
+            'fingerprint': plan.get('fingerprint') if type(plan) is dict else None,
+            'sources_sha': digest(plan['sources']) if known else None}
+
+
+def passed_row(run, row):
+    """passed() for one review_index() row."""
     try:
         result = json.loads((run / 'result.json').read_text())
         review = result['review']
-        return (digest(plan['sources']) == plan['candidate_sha'] == result['candidate_sha']
+        return (type(row['sources_sha']) is str and row['sources_sha'] == row['candidate_sha'] == result['candidate_sha']
                 and result['scope'] == 'LIVE_MILESTONE_REVIEW' and result['verdict'] == 'PASS'
                 and review['verdict'] == 'pass' and all(f['severity'] == 'low' for f in review['findings'])
                 and (run / 'artifacts/local_live_approval.json').is_file()
-                and not material_rejection(plan['candidate_sha']))
+                and not material_rejection(row['candidate_sha']))
     except (OSError, ValueError, KeyError, TypeError):
         return False
 
 
-def reviews():
-    """(run, plan) of every prepared review, newest first (run folders start with a UTC timestamp). Reviews made
-    by earlier versions are under prototype/runs; new ones are in the work folder (prepare_live_run.py)."""
-    paths = [*RUNS.glob('*/artifacts/milestone_plan.json'), *APP['WORK_RUNS'].glob('*/artifacts/milestone_plan.json')]
-    for path in sorted(paths, key=lambda p: p.parent.parent.name, reverse=True):
+def passed(run, plan):
+    """A live review of exactly plan['sources'] that passed with LOW advice at most."""
+    return passed_row(run, brief(plan))
+
+
+# A run folder older than this (by the UTC time its name starts with) that has no review plan never gets one:
+# prepare() writes the plan seconds after it creates the run.
+SETTLED = datetime.timedelta(days=1)
+
+
+def review_index():
+    """(run, brief) of every prepared review, newest first (run folders start with a UTC timestamp). Reviews made
+    by earlier versions are under prototype/runs; new ones are in the work folder (prepare_live_run.py).
+
+    2026-11-10: every lookup walked all run folders (about 17,800 on the owner's PC) and parsed every plan
+    (266 plans, 224 MB), twice or more per question: 7-11 s warm and 58 s after a restart, with the dashboard
+    locked meanwhile. The answers are unchanged; they are only remembered. data/milestone_review_index.json keeps
+    each plan's brief() under the plan file's size and modification time (a changed plan is read again) and the
+    names of settled run folders without a plan. It holds no verdict: result.json, the approval marker and
+    material rejections are still read from the run every time."""
+    path = C.DATA / 'milestone_review_index.json'
+    try:
+        saved = json.loads(path.read_text(encoding='utf-8'))
+        saved = saved if type(saved) is dict else {}
+    except (OSError, ValueError):
+        saved = {}
+    now, found, fresh = datetime.datetime.now(datetime.UTC), [], {}
+    for root in (RUNS, APP['WORK_RUNS']):
+        known = saved.get(str(root)) if type(saved.get(str(root))) is dict else {}
+        plans = known.get('plans') if type(known.get('plans')) is dict else {}
+        none = set(known['none']) if type(known.get('none')) is list and all(type(n) is str for n in known['none']) else set()
+        entry = {'plans': {}, 'none': []}
         try:
-            yield path.parent.parent, json.loads(path.read_text())
+            names = sorted(item.name for item in os.scandir(root) if item.is_dir())
+        except OSError:
+            names = []
+        for name in names:
+            if name in none:
+                entry['none'].append(name)
+                continue
+            plan_path = root / name / 'artifacts/milestone_plan.json'
+            try:
+                size = plan_path.stat()
+            except OSError:
+                try:
+                    made = datetime.datetime.strptime(name[:16], '%Y%m%dT%H%M%SZ').replace(tzinfo=datetime.UTC)
+                    if now - made > SETTLED:
+                        entry['none'].append(name)
+                except ValueError:
+                    pass   # not a timestamped run folder: looked at again every time
+                continue
+            row = plans.get(name)
+            if not (type(row) is list and len(row) == 5 and row[:2] == [size.st_mtime_ns, size.st_size]
+                    and all(value is None or type(value) is str for value in row[2:])):
+                try:
+                    value = brief(json.loads(plan_path.read_text()))
+                except (OSError, ValueError):
+                    continue   # unreadable now: not remembered, read again next time
+                row = [size.st_mtime_ns, size.st_size, value['candidate_sha'], value['fingerprint'], value['sources_sha']]
+            entry['plans'][name] = row
+            found.append((name, root / name, dict(zip(('candidate_sha', 'fingerprint', 'sources_sha'), row[2:]))))
+        fresh[str(root)] = entry
+    # Other folders' entries stay while those folders exist (a test's temporary runs, another work folder).
+    value = {**{key: item for key, item in saved.items() if key not in fresh and Path(key).is_dir()}, **fresh}
+    if value != saved:
+        try:
+            C.atomic_json(path, value)
+        except OSError:
+            pass   # only a memory aid: the next lookup rebuilds what it could not save
+    return [(run, row) for _, run, row in sorted(found, key=lambda item: item[0], reverse=True)]
+
+
+def reviews():
+    """(run, plan) of every prepared review, newest first: the full plans, read one at a time."""
+    for run, _ in review_index():
+        try:
+            yield run, json.loads((run / 'artifacts/milestone_plan.json').read_text())
         except (OSError, ValueError):
             continue
 
 
 def material_rejection(candidate_sha):
     """A second opinion cannot silently erase material findings on identical source bytes."""
-    for run, plan in reviews():
-        if plan.get('candidate_sha') != candidate_sha or digest(plan.get('sources')) != candidate_sha:
+    for run, row in review_index():
+        if row['candidate_sha'] != candidate_sha or row['sources_sha'] != candidate_sha:
             continue
         # Validated findings are saved to progress before final publication. A killed worker or failed report
         # write must not erase that rejection just because result.json was never published.
@@ -96,15 +177,29 @@ def material_rejection(candidate_sha):
     return False
 
 
+def indexed_plan(run, row):
+    """The plan file itself, when it still is what the index row says: a positive answer never rests on the
+    remembered row alone."""
+    try:
+        plan = json.loads((run / 'artifacts/milestone_plan.json').read_text())
+    except (OSError, ValueError):
+        return None
+    return plan if brief(plan) == row else None
+
+
 def verified_current():
-    current, sources = fingerprint(), review_sources()
-    return any(plan.get('fingerprint') == current and plan.get('sources') == sources and passed(run, plan)
-               for run, plan in reviews())
+    current, sources_sha = fingerprint(), digest(review_sources())
+    return any(row['fingerprint'] == current and row['sources_sha'] == sources_sha and passed_row(run, row)
+               and indexed_plan(run, row) is not None for run, row in review_index())
 
 
 def baseline():
     """The newest passed review: everything it covered was independently reviewed."""
-    return next((plan for run, plan in reviews() if passed(run, plan)), None)
+    for run, row in review_index():
+        plan = indexed_plan(run, row) if passed_row(run, row) else None
+        if plan is not None:
+            return plan
+    return None
 
 
 def evidence(sources, base):

@@ -354,7 +354,8 @@ class RecoveryTests(unittest.TestCase):
         def save(): (candidate/'result.json').write_text(json.dumps(result))
         save()
         # All synthetic gate evidence stays OUTSIDE production prototype/runs.
-        with patch.object(R,'RUNS',folder),patch.object(R,'review_sources',return_value=sources):
+        with patch.object(R,'RUNS',folder),patch.object(R,'review_sources',return_value=sources), \
+                patch.dict(R.APP,{'WORK_RUNS':folder/'no_work_runs'}),patch.object(R.C,'DATA',folder):
             self.assertFalse(R.verified_current())
             result['scope']='LIVE_MILESTONE_REVIEW';save()
             self.assertFalse(R.verified_current())

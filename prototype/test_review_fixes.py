@@ -485,8 +485,55 @@ class IncrementalReviewTests(unittest.TestCase):
         review('20261022T000000Z_failed', {'v': '3'}, verdict='FAIL')
         review('20261022T010000Z_unapproved', {'v': '4'}, approved=False)
         review('20261022T020000Z_tampered', {'v': '5'}, tamper=True)
-        with patch.object(self.R, 'RUNS', root):
+        # Only the synthetic folder is searched: this PC's real reviews in the work folder must not answer.
+        with patch.object(self.R, 'RUNS', root), patch.dict(self.R.APP, {'WORK_RUNS': root / 'no_work_runs'}), \
+                patch.object(self.R.C, 'DATA', root):
             self.assertEqual(self.R.baseline()['sources'], {'v': '2'})
+            self.assertEqual(self.R.baseline()['sources'], {'v': '2'})   # the same answer from the saved index
+            index = json.loads((root / 'milestone_review_index.json').read_text())[str(root)]
+            self.assertEqual(sorted(index['plans']), sorted(p.name for p in root.iterdir() if p.is_dir()))
+            # A replaced plan is read again: its remembered row is tied to the file's size and time.
+            tampered = root / '20261022T020000Z_tampered/artifacts/milestone_plan.json'
+            tampered.write_text(json.dumps({'sources': {'v': '5'}, 'candidate_sha': self.R.digest({'v': '5'}), 'fingerprint': 'f'}))
+            self.assertEqual(self.R.baseline()['sources'], {'v': '5'})
+
+    def test_the_review_index_remembers_settled_folders_and_never_a_verdict(self):
+        import tempfile
+        with tempfile.TemporaryDirectory(dir=ROOT / 'prototype') as temporary:
+            root, sources = Path(temporary) / 'runs', {'app.py': 'code'}
+            sha = self.R.digest(sources)
+            for name in ('20200101T000000Z_noplan', '29990101T000000Z_recent', 'not_a_run'):
+                (root / name / 'artifacts').mkdir(parents=True)
+            run = root / '20200102T000000Z_review'
+            (run / 'artifacts').mkdir(parents=True)
+            (run / 'artifacts/milestone_plan.json').write_text(json.dumps({'sources': sources, 'candidate_sha': sha, 'fingerprint': 'f'}))
+            (run / 'artifacts/local_live_approval.json').write_text('{}')
+            def result(findings):
+                (run / 'result.json').write_text(json.dumps({'scope': 'LIVE_MILESTONE_REVIEW', 'verdict': 'PASS',
+                    'candidate_sha': sha, 'review': {'verdict': 'pass', 'findings': findings}}))
+            result([])
+            with patch.object(self.R, 'RUNS', root), patch.dict(self.R.APP, {'WORK_RUNS': root / 'no_work_runs'}), \
+                    patch.object(self.R.C, 'DATA', Path(temporary)), patch.object(self.R, 'fingerprint', return_value='f'), \
+                    patch.object(self.R, 'review_sources', return_value=sources):
+                self.assertTrue(self.R.verified_current())
+                index = json.loads((Path(temporary) / 'milestone_review_index.json').read_text())[str(root)]
+                self.assertEqual(index['none'], ['20200101T000000Z_noplan'])   # recent and unnamed folders are looked at again
+                self.assertEqual(list(index['plans']), ['20200102T000000Z_review'])
+                self.assertNotIn('PASS', json.dumps(index))
+                # The verdict is read from the run every time: a later material finding is seen at once.
+                result([{'severity': 'medium'}])
+                self.assertFalse(self.R.verified_current())
+                result([])
+                self.assertTrue(self.R.verified_current())
+                # A folder that was too recent to settle gets its plan later and is found.
+                late = root / '29990101T000000Z_recent'
+                (late / 'artifacts/milestone_plan.json').write_text(json.dumps({'sources': {'v': 'late'}, 'candidate_sha': self.R.digest({'v': 'late'})}))
+                self.assertEqual([found.name for found, _ in self.R.review_index()], ['29990101T000000Z_recent', '20200102T000000Z_review'])
+                # A damaged index is rebuilt, never trusted.
+                (Path(temporary) / 'milestone_review_index.json').write_text('{"' + str(root).replace('\\', '\\\\') + '": {"plans": {"20200102T000000Z_review": [1, 2, "x", "f", "x"]}, "none": "all"}}')
+                self.assertTrue(self.R.verified_current())
+                (Path(temporary) / 'milestone_review_index.json').write_text('not json')
+                self.assertTrue(self.R.verified_current())
 
     def test_later_pass_cannot_erase_material_findings_on_identical_sources(self):
         import tempfile
@@ -502,6 +549,8 @@ class IncrementalReviewTests(unittest.TestCase):
                     'verdict': verdict, 'candidate_sha': plan['candidate_sha'],
                     'review': {'verdict': 'pass' if verdict == 'PASS' else 'changes_requested', 'findings': findings}}))
             with patch.object(self.R, 'RUNS', Path(temporary)), patch.object(self.R, 'fingerprint', return_value='f'), \
+                    patch.dict(self.R.APP, {'WORK_RUNS': Path(temporary) / 'no_work_runs'}), \
+                    patch.object(self.R.C, 'DATA', Path(temporary)), \
                     patch.object(self.R, 'review_sources', return_value=sources):
                 self.assertFalse(self.R.passed(Path(temporary) / '002', plan))
                 self.assertFalse(self.R.verified_current())

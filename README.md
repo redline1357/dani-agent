@@ -6,7 +6,7 @@ Free and open source (Apache-2.0). It runs on your own PC with your own Claude a
 
 **Early preview.** Dani Agent is tested on the developer's Windows 11 PC: the offline suite passes, an independent source review passed, and a real product built from a Word specification passed independent acceptance checks. Other Windows installations have not been qualified yet, and no local result guarantees that every future build will succeed.
 
-Website: [buildhub.dk/dani-agent](https://buildhub.dk/dani-agent/). Download the latest Windows zip from [Releases](https://github.com/redline1357/dani-agent/releases/latest). Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
+Website: [buildhub.dk/dani-agent](https://buildhub.dk/dani-agent/). Download the latest Windows zip from [Releases](https://github.com/redline1357/dani-agent/releases/latest). **How to start (step by step): [QUICK_START.md](QUICK_START.md).** In short: install the programs under Requirements, extract the zip, and double-click **Start Dani Agent.cmd**. For a first look without AI sessions, double-click **Start Dani Agent (no AI).cmd**. This is a Python source application, not a standalone executable or an installer.
 
 ## Requirements
 
@@ -23,13 +23,13 @@ The current Dani Agent workflow accepts subscription sign-ins and rejects API-ke
 
 Keep this folder in a location you control. Do not run Dani Agent as administrator.
 
-For initial inspection without AI sessions, double-click **Start-Dani-Offline.cmd**, or open a terminal in this folder and run:
+For initial inspection without AI sessions, double-click **Start Dani Agent (no AI).cmd**, or open a terminal in this folder and run:
 
 ```text
 py -3.12 -I -B DaniDashboard.py --offline-only
 ```
 
-This mode permits model-free checks and product drafts while disabling AI sessions and approvals. Before using the normal **Start-Dani-Dashboard.cmd** launcher, explicitly decide whether to authorize its automatic setup sessions: one Claude zero-tool startup check and one Codex sandbox diagnostic when their prerequisites are met. These checks use subscription sessions. The current dashboard starts them automatically in live mode; it does not offer a separate initial setup-consent toggle. Remain in model-free mode if that scope has not been approved.
+This mode permits model-free checks and product drafts while disabling AI sessions and approvals. Before using the normal **Start Dani Agent.cmd** launcher, explicitly decide whether to authorize its automatic setup sessions: one Claude zero-tool startup check and one Codex sandbox diagnostic when their prerequisites are met. These checks use subscription sessions. The current dashboard starts them automatically in live mode; it does not offer a separate initial setup-consent toggle. Remain in model-free mode if that scope has not been approved.
 
 The dashboard opens on `http://127.0.0.1:8765` through a private launcher link. Keep that link private.
 

@@ -19,4 +19,5 @@ Codex and Claude work on the same application source. Read `README.md` and `QUIC
 - Do not start model sessions, install software, or deploy products without the applicable explicit owner approval.
 - Run the checks relevant to your change. Distinguish existing source-matched evidence from tests actually rerun; do not claim customer readiness from offline tests alone.
 - Keep user-facing documentation in English. The owner chose the Apache License 2.0 (2026-11-18); keep `LICENSE` and `NOTICE` unchanged unless the owner decides otherwise.
+- Users start Dani Agent with `Start Dani Agent.cmd` (or `Start Dani Agent (no AI).cmd`); `QUICK_START.md` is their step-by-step guide. `Start-Dani-Agent.cmd` is the older desktop window: it stays in the repository because the source checkpoint names it, but the user download leaves it out.
 - The public website lives in `website/` (static HTML/CSS, no build step, no tracking) and is published by the owner at `https://buildhub.dk/dani-agent/` (Simply.com hosting, uploaded by hand; `.htaccess` sets its security headers). Keep its claims in line with `README.md`, and keep its paths relative so it works inside that folder.

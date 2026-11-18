@@ -19,8 +19,8 @@
 !/DaniAgent.py
 !/DaniDashboard.py
 !/Start-Dani-Agent.cmd
-!/Start-Dani-Dashboard.cmd
-!/Start-Dani-Offline.cmd
+!/Start Dani Agent.cmd
+!/Start Dani Agent (no AI).cmd
 !/dani_agent/
 /dani_agent/*
 !/dani_agent/*.py

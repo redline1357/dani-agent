@@ -852,7 +852,7 @@ def serve(port=8765, open_browser=True, *, offline_only=False):
 
 LOCKED = """<!doctype html><meta charset="utf-8"><title>Dani Agent</title>
 <body style="font-family:system-ui;padding:3rem"><h1>Dani Agent</h1>
-<p>Open the dashboard with <b>Start-Dani-Dashboard.cmd</b>. It opens a private link for this session.</p></body>"""
+<p>Open Dani Agent with <b>Start Dani Agent.cmd</b> in its folder. It opens a private link for this session.</p></body>"""
 
 PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1307,7 +1307,7 @@ function renderConnect() {
   }
   if ((L.environment_inherited || []).length) signIn.append(el('p', {className: 'err', textContent: 'Dani Agent was started by a program that sets '
     + L.environment_inherited.join(', ') + ' (for example a terminal or a developer tool). These are not your account settings, and they would send '
-    + 'Claude or Codex somewhere other than your subscription. Close Dani Agent and start it again from File Explorer with Start-Dani-Dashboard.cmd. '
+    + 'Claude or Codex somewhere other than your subscription. Close Dani Agent and start it again from File Explorer with Start Dani Agent.cmd. '
     + '(Check again cannot clear these: they belong to this running copy of Dani Agent.)'}));
   if ((L.environment_in_windows || []).length) signIn.append(el('p', {className: 'err', textContent: L.environment_in_windows.join(', ')
     + ' is set in your Windows settings. Dani Agent only uses your subscriptions, so remove it: Start menu > "Edit environment variables for your account"'

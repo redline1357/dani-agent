@@ -6,7 +6,7 @@ Free and open source (Apache-2.0). It runs on your own PC with your own Claude a
 
 **Early preview.** Dani Agent is tested on the developer's Windows 11 PC: the offline suite passes, an independent source review passed, and a real product built from a Word specification passed independent acceptance checks. Other Windows installations have not been qualified yet, and no local result guarantees that every future build will succeed.
 
-Download the latest Windows zip from [Releases](https://github.com/redline1357/dani-agent/releases/latest). Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
+Website: [buildhub.dk/dani-agent](https://buildhub.dk/dani-agent/). Download the latest Windows zip from [Releases](https://github.com/redline1357/dani-agent/releases/latest). Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
 
 ## Requirements
 

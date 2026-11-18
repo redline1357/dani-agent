@@ -2,9 +2,11 @@
 
 Dani Agent builds small websites and Python applications on a single Windows PC. Claude plans the work, Codex implements each step, local tests run, and a separate Claude session reviews the result. Accepted steps are saved in a private product folder.
 
-**Clean source bundle for local evaluation; not yet qualified for customer delivery.** The current source passed 456 offline tests and an independent source review. A real Word-upload build passed six combined independent acceptance cases. Fresh-account onboarding, wider Windows qualification, and owner licensing/provider-agreement decisions remain separate gates. These local results do not guarantee every future build will succeed.
+Free and open source (Apache-2.0). It runs on your own PC with your own Claude and Codex sign-ins: no Dani Agent account, no server in the middle, no API keys. Provider fees and usage limits apply.
 
-Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
+**Early preview.** Dani Agent is tested on the developer's Windows 11 PC: the offline suite passes, an independent source review passed, and a real product built from a Word specification passed independent acceptance checks. Other Windows installations have not been qualified yet, and no local result guarantees that every future build will succeed.
+
+Download the latest Windows zip from [Releases](https://github.com/redline1357/dani-agent/releases/latest). Quick start: [QUICK_START.md](QUICK_START.md). For a first look without AI sessions, double-click **Start-Dani-Offline.cmd**. This is a Python source application, not a standalone executable or an installer.
 
 ## Requirements
 
@@ -71,4 +73,6 @@ The intended product scope is single-user local software using Python's standard
 
 ## License
 
-The owner has not selected an open-source or customer-use license. [LICENSE](LICENSE) is preserved unchanged; a clean source export does not itself grant recipients usage or redistribution rights. The bundled pypdf dependency retains its own license and attribution.
+Dani Agent is free and open source under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution. The bundled pypdf dependency keeps its own [BSD 3-Clause license](vendor/pypdf.LICENSE).
+
+The license covers Dani Agent only. Claude Code and Codex are separate programs with their own terms, and your use of them, and of the models they call, stays subject to your provider accounts and their usage limits. Dani Agent is not affiliated with or endorsed by Anthropic or OpenAI.

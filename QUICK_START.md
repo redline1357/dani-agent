@@ -20,10 +20,10 @@ When creating a new product, you can attach Word `.docx`, text-based PDF, TXT, M
 
 - Share this clean folder or its ZIP. Do not publish the developer's original workspace or its Git history.
 - Do not add the generated `data` folder, built products, `.env` files, credentials, logs or private reports to a shared copy. A `.gitignore` is included.
-- The original `LICENSE` is retained unchanged. An open-source or customer-use license has not been selected. A GitHub-ready file layout does not select a license or grant usage rights.
+- Dani Agent is free and open source under the Apache License 2.0 (see `LICENSE` and `NOTICE`). Claude Code, Codex and the models they use stay under your provider accounts' own terms and limits.
 
 ## Validation and limits
 
 Word/PDF uploads, the 456-test regression and an independent source review passed on the developer's system. A real product built from a Word specification also passed six combined acceptance cases. These results do not guarantee every future build or qualify every Windows installation.
 
-Package checks are recorded in `PACKAGE_INFO.json`. Each new user must connect their own accounts and complete security checks on their own machine. Full requirements and limitations are in [README.md](README.md).
+Each new user must connect their own accounts and complete security checks on their own machine. Full requirements and limitations are in [README.md](README.md).

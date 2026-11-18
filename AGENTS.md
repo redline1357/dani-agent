@@ -18,4 +18,5 @@ Codex and Claude work on the same application source. Read `README.md` and `QUIC
 - Use existing provider subscription sign-ins. Do not expose credentials or introduce API billing/fallback.
 - Do not start model sessions, install software, or deploy products without the applicable explicit owner approval.
 - Run the checks relevant to your change. Distinguish existing source-matched evidence from tests actually rerun; do not claim customer readiness from offline tests alone.
-- Keep user-facing documentation in English. Retain the existing LICENSE until the owner selects different terms.
+- Keep user-facing documentation in English. The owner chose the Apache License 2.0 (2026-11-18); keep `LICENSE` and `NOTICE` unchanged unless the owner decides otherwise.
+- The public website lives in `website/` (static HTML/CSS, no build step, no tracking). Keep its claims in line with `README.md`.

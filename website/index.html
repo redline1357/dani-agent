@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dani Agent: describe an app, approve once, get it built</title>
+<meta name="description" content="Dani Agent is a free, open-source Windows app that turns a description into a tested website or Python app. Claude plans and reviews, Codex writes the code, on your own PC with your own sign-ins.">
+<meta property="og:title" content="Dani Agent">
+<meta property="og:description" content="Describe it. Approve once. Get a working app, built on your own PC by Claude and Codex.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="logo.svg" alt="" width="30" height="30">Dani Agent</a>
+    <nav aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#safety">Safety</a>
+      <a href="#start">Get started</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/redline1357/dani-agent">GitHub</a>
+    </nav>
+    <a class="btn primary small" href="https://github.com/redline1357/dani-agent/releases/latest/download/DaniAgent-windows.zip">Download</a>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Free and open source · Windows 11</span>
+      <h1>Describe it. Approve once. Get a working app.</h1>
+      <p class="lead">Dani Agent turns a plain description, or a Word or PDF specification, into a tested website or Python app. Claude plans the work and reviews every step. Codex writes the code. It all runs on your own PC, with your own Claude and Codex sign-ins.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/redline1357/dani-agent/releases/latest/download/DaniAgent-windows.zip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></svg>
+          Download for Windows</a>
+        <a class="btn" href="https://github.com/redline1357/dani-agent">View the source</a>
+      </div>
+      <p class="fine">Apache-2.0 · Early preview · Uses your own Claude and Codex accounts; provider fees and usage limits apply.</p>
+    </div>
+
+    <figure class="flush">
+      <div class="mock" aria-hidden="true">
+        <div class="bar"><span class="dots"><i></i><i></i><i></i></span><b>Dani Agent</b><span class="pill warn">Building</span></div>
+        <div class="body">
+          <div class="side">
+            <div class="item"><b>Mug Shop</b><span class="pill ok">Ready</span></div>
+            <div class="item sel"><b>Invoice Desk</b><span class="pill warn">Building</span></div>
+            <div class="item"><b>Roster Grid</b><span class="pill">Waiting for you</span></div>
+          </div>
+          <div class="main">
+            <div class="running"><span class="dot"></span><span>Codex is writing step 3 of 4</span></div>
+            <h3>Invoice Desk</h3>
+            <div class="meta">2 of 4 steps done</div>
+            <div class="progress"><span></span></div>
+            <ol>
+              <li><span class="num ok">1</span><div><b>Decimal money and tax rounding</b><div class="meta">Tests: 29 run, 0 failed · Claude review: pass</div></div></li>
+              <li><span class="num ok">2</span><div><b>CSV reading with clear errors</b><div class="meta">Tests: 41 run, 0 failed · Claude review: pass</div></div></li>
+              <li><span class="num warn">3</span><div><b>Invoice layout and numbering</b><div class="meta">Codex is writing the code</div></div></li>
+              <li><span class="num">4</span><div><b>Command line and README</b><div class="meta">Not started</div></div></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <figcaption class="caption">Illustrated example of the dashboard, not a recorded build.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="alt" id="two">
+  <div class="wrap">
+    <h2>Two AIs, one job each</h2>
+    <p class="intro">Dani Agent uses exactly two AI programs you already sign in to: Claude Code and Codex. One writes, the other checks, and plain tests settle what works.</p>
+    <div class="grid g3">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
+        <span class="tag">Claude</span>
+        <h3>Plans and reviews</h3>
+        <p>Splits your product into small steps, rates how hard each one is, and reviews every change with no tools at all: it can read and reply, nothing else.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M13.5 5l-3 14"/></svg></div>
+        <span class="tag">Codex</span>
+        <h3>Writes the code</h3>
+        <p>Builds one step at a time inside a Windows sandbox with no network access. Changes outside that step's files are thrown away.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7 15h10"/></svg></div>
+        <span class="tag">Tests</span>
+        <h3>Prove each step</h3>
+        <p>Every step's tests run on your PC before it is kept. A step that fails is corrected, or tried again with a stronger model.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="intro">You make one decision. Dani Agent shows you exactly what an approval covers, then carries the build through on its own.</p>
+    <ol class="steps">
+      <li><b>Describe it</b><span>Type what the product should do, or attach a Word, PDF, text, CSV or JSON specification.</span></li>
+      <li><b>Approve once</b><span>See which sessions the build may use, then approve. Nothing runs before that.</span></li>
+      <li><b>Claude plans</b><span>The product becomes a short list of steps, each with its files, tests and difficulty.</span></li>
+      <li><b>Build, test, review</b><span>Codex writes each step, its tests run, and Claude reviews it before it is kept.</span></li>
+      <li><b>Get the product</b><span>Preview it in the dashboard, open its folder, or download it as a zip.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <h2>Keeps going on its own</h2>
+    <p class="intro">An approved build does not stop because something went wrong once. It stops when you cancel it, or when an attached file can no longer be read safely.</p>
+    <div class="grid g2">
+      <div class="card"><h3>Retries with growing pauses</h3><p>A step that does not pass is tried again, with a stronger model for hard work and pauses of up to an hour between tries.</p></div>
+      <div class="card"><h3>Waits out usage limits</h3><p>When your Claude or Codex limit is used up, the product pauses and goes on by itself at the time it shows you.</p></div>
+      <div class="card"><h3>Survives restarts and updates</h3><p>Finished steps are kept. After a restart, or when Claude Code or Codex update themselves, the build picks up where it was.</p></div>
+      <div class="card"><h3>Polishes on request</h3><p>Small review notes can be handed back to Codex in one polish pass; it fixes the ones it agrees with and says why for the rest.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="safety">
+  <div class="wrap">
+    <h2>Your PC, your accounts, your data</h2>
+    <p class="intro">Dani Agent is local software. There is no Dani Agent account and no server in the middle.</p>
+    <div class="grid g2">
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>Your own subscriptions</b><span>It runs the official Claude Code and Codex programs with your sign-ins. No API keys, no proxy, no hidden billing.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>A dashboard only you can open</b><span>It listens on 127.0.0.1 and opens with a private link for each start.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>Products stay on your disk</b><span>Code, history and settings live in a private work folder that only your Windows account can open.</span></div></li>
+      </ul>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>Sandboxed code</b><span>Generated code and its tests run in a Windows sandbox, and every process is held in a Windows Job that is closed when the work ends.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>A reviewer that cannot act</b><span>Claude reviews with no tools, plugins or hooks, and Dani Agent checks that before every session.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><div><b>Checks itself first</b><span>When Dani Agent changes, its own source is reviewed by Claude before it builds anything again.</span></div></li>
+      </ul>
+    </div>
+    <p class="limits"><b>Good to know.</b> Local does not mean offline: while it builds, your descriptions, code and test results are sent to Anthropic and OpenAI through their programs, under your accounts' terms. Review every product before you use it; tests and AI review do not replace your own checks.</p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <h2>What it builds</h2>
+    <p class="intro">Small, single-user software that runs on your own computer, with nothing to install.</p>
+    <div class="grid g3">
+      <div class="card"><h3>Websites and web apps</h3><p>Plain HTML, CSS and JavaScript with a tiny Node.js server. Data in the browser or in local files.</p></div>
+      <div class="card"><h3>Python apps and scripts</h3><p>Command-line tools and small programs using only Python's standard library.</p></div>
+      <div class="card"><h3>Not yet</h3><p>Accounts and logins, hosted services, payments, or downloaded packages. Those are outside what Dani Agent has been tested on.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap start">
+    <div>
+      <h2>Get started</h2>
+      <p class="intro">Setup takes a few minutes. Start without any AI to look around first.</p>
+      <ol class="steps one-col">
+        <li><b>Download and unzip</b><span>Extract the whole zip to a folder you control. Do not run it as administrator.</span></li>
+        <li><b>Look around for free</b><span>Double-click <code>Start-Dani-Offline.cmd</code>. AI sessions stay switched off in this mode.</span></li>
+        <li><b>Connect your accounts</b><span>Start <code>Start-Dani-Dashboard.cmd</code>. The Connect page finds your programs and guides you through sign-in and a private work folder.</span></li>
+        <li><b>Describe your first product</b><span>After its safety checks pass, choose New product and start small.</span></li>
+      </ol>
+      <div class="cta gap-top">
+        <a class="btn primary" href="https://github.com/redline1357/dani-agent/releases/latest/download/DaniAgent-windows.zip">Download for Windows</a>
+        <a class="btn" href="https://github.com/redline1357/dani-agent#readme">Read the full guide</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>What you need</h3>
+      <ul class="req">
+        <li><b>Windows 11</b><span>Normal, non-administrator account</span></li>
+        <li><b>Python 3.12</b><span>From python.org, for all users</span></li>
+        <li><b>Git for Windows</b><span>Installed for all users</span></li>
+        <li><b>Node.js</b><span>In C:\Program Files\nodejs</span></li>
+        <li><b>Claude Code</b><span>Signed in with your Claude plan</span></li>
+        <li><b>Codex</b><span>Signed in with your ChatGPT plan</span></li>
+      </ul>
+      <p class="meta gap-top">macOS and Linux are not supported yet: the sandbox Dani Agent relies on is part of Windows.</p>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="faq">
+  <div class="wrap faq">
+    <h2>Questions</h2>
+    <details><summary>Is Dani Agent free?</summary><p>Yes. Dani Agent is free and open source under the Apache License 2.0. You need your own Claude and Codex (ChatGPT) plans, and their prices, usage limits and terms apply.</p></details>
+    <details><summary>Which AIs does it use?</summary><p>Exactly two: Claude through Claude Code, which plans and reviews, and Codex, which writes the code. It does not use API keys and has no fallback to other providers.</p></details>
+    <details><summary>Does my code leave my computer?</summary><p>Your products and history are stored on your PC. To build them, your description, the code and test results are sent to Anthropic and OpenAI through their official programs, as with any use of those tools. Dani Agent itself sends nothing anywhere else.</p></details>
+    <details><summary>How many sessions does a build use?</summary><p>The approval screen shows it: usually one Codex and one Claude session per step, plus one planning session, and more if a step needs corrections or retries. A step that keeps failing is tried again until it passes, so a hard product can use a lot of your allowance. You can cancel at any time.</p></details>
+    <details><summary>What happens when my usage limit runs out?</summary><p>The product pauses and shows when it will try again. Finished steps are kept, and the build goes on by itself once your limit resets.</p></details>
+    <details><summary>Does it work on a Mac or on Linux?</summary><p>Not yet. Dani Agent relies on Windows' sandbox and Windows Job containment to keep generated code in check, so it is Windows 11 only for now.</p></details>
+    <details><summary>Does my computer need to stay on?</summary><p>Yes. Dani Agent runs on your PC, so builds pause while it is off or asleep and carry on when it is back.</p></details>
+    <details><summary>Is it ready for important work?</summary><p>It is an early preview. It is tested on the developer's machine, including real builds checked by hand, but other Windows setups are not qualified yet. Start with small products and review what it builds.</p></details>
+    <details><summary>Where do I report a problem?</summary><p>Open an issue on <a href="https://github.com/redline1357/dani-agent/issues">GitHub</a> with your Windows version, the Dani Agent release and the steps to reproduce. Remove private details from logs and screenshots first.</p></details>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>Start with something small</h2>
+    <p>Free, open source, and running on your own PC with the Claude and Codex accounts you already have.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/redline1357/dani-agent/releases/latest/download/DaniAgent-windows.zip">Download for Windows</a>
+      <a class="btn" href="https://github.com/redline1357/dani-agent">View on GitHub</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>Dani Agent · Apache-2.0 · Not affiliated with or endorsed by Anthropic or OpenAI.</div>
+    <nav aria-label="Footer">
+      <a href="https://github.com/redline1357/dani-agent">Source</a>
+      <a href="https://github.com/redline1357/dani-agent/releases">Releases</a>
+      <a href="https://github.com/redline1357/dani-agent/blob/main/LICENSE">License</a>
+      <a href="https://github.com/redline1357/dani-agent/issues">Report a problem</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

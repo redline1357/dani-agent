@@ -4,6 +4,15 @@
 !/README.md
 !/QUICK_START.md
 !/LICENSE
+!/NOTICE
+!/website/
+/website/*
+!/website/*.html
+!/website/*.css
+!/website/*.svg
+!/website/*.png
+!/website/*.webp
+!/website/vercel.json
 !/AGENTS.md
 !/CLAUDE.md
 !/DaniAgent.py

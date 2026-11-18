@@ -1,0 +1,12 @@
+Dani Agent
+Copyright 2026 The Dani Agent authors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes pypdf 6.21.2 in vendor/pypdf, licensed under the
+BSD 3-Clause License (see vendor/pypdf.LICENSE).
+
+Dani Agent runs the official Claude Code and Codex programs installed on the
+user's computer. It does not include or redistribute those programs. Claude
+is a trademark of Anthropic, PBC. Codex is a trademark of OpenAI. Dani Agent
+is not affiliated with or endorsed by either company.

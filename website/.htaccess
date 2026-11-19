@@ -1,5 +1,5 @@
 # Dani Agent website at buildhub.dk/dani-agent/ (Apache). Applies to this folder only, not to the rest of buildhub.dk.
-# The same headers as vercel.json. Inside IfModule, so a server without mod_headers simply skips them.
+# Security headers for this folder. Inside IfModule, so a server without mod_headers simply skips them.
 <IfModule mod_headers.c>
   Header always set Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self' data:; script-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
   Header always set X-Content-Type-Options "nosniff"

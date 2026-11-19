@@ -12,7 +12,6 @@
 !/website/*.svg
 !/website/*.png
 !/website/*.webp
-!/website/vercel.json
 !/website/.htaccess
 !/AGENTS.md
 !/CLAUDE.md

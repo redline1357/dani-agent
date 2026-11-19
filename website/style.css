@@ -15,6 +15,7 @@ a{color:var(--accent)}:focus-visible{outline:2px solid var(--focus);outline-offs
 .brand{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.1rem;color:var(--text);text-decoration:none}
 .brand img{width:30px;height:30px}
 .top nav{display:flex;gap:1.3rem;margin-inline-start:auto}.top nav a{color:var(--muted);text-decoration:none;font-weight:500;font-size:.95rem}
+.home{display:inline-flex;align-items:center;gap:.35rem;min-height:44px;padding-inline-end:1.2rem;margin-inline-end:-.3rem;border-inline-end:1px solid var(--line);color:var(--muted);text-decoration:none;font-weight:500;font-size:.92rem;white-space:nowrap}.home:hover{color:var(--text)}
 .top nav a:hover{color:var(--text)}.brand,.top nav a,.top .btn{white-space:nowrap}
 
 /* buttons */
@@ -95,6 +96,6 @@ footer a{color:var(--muted)}
 @media (max-width:960px){.hero .wrap,.start{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:900px){.top nav{display:none}.top .btn.small{margin-inline-start:auto}}
 @media (max-width:760px){.g3{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:640px){.wrap{padding:0 1rem}.top .wrap{gap:.8rem}.top .btn.small{min-height:44px}
+@media (max-width:640px){.wrap{padding:0 1rem}.top .wrap{gap:.8rem}.home{padding-inline-end:.8rem;margin-inline-end:0}.top .btn.small{min-height:44px}
   .hero{padding:2.5rem 0 2rem}section{padding:3rem 0}.g2,.g3,.steps{grid-template-columns:minmax(0,1fr)}
   .mock .body{grid-template-columns:minmax(0,1fr)}.mock .side{display:none}.cta .btn{flex:1 1 100%}}
